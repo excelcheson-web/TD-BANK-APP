@@ -1,0 +1,910 @@
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import TransactionSuccess from './TransactionSuccess'
+import OtpModal from './OtpModal'
+import AiSupport from './AiSupport'
+import FxTicker from './FxTicker'
+import AnimatedBalance from './AnimatedBalance'
+import InternationalTransfer from './InternationalTransfer'
+import LocalTransfer from './LocalTransfer'
+import AccountInfo from './AccountInfo'
+import DepositOverlay from './DepositOverlay'
+import BankCard from './BankCard'
+import ScheduledTransfer from './ScheduledTransfer'
+import BillPayment from './BillPayment'
+import Investment from './Investment'
+import TransactionHistory from './TransactionHistory'
+import FinancialServices from './FinancialServices'
+
+const STORAGE_KEY = 'securebank_admin'
+const NOTIF_KEY = 'securebank_notifications'
+
+function getAdminData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch { return {} }
+}
+
+/* ── Inline SVG icons ────────────────────────────────────── */
+const BackIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+)
+const HelpIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+)
+const InfoIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+)
+const TransferIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
+    <path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+  </svg>
+)
+const DepositIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3v12m0 0l4-4m-4 4l-4-4" /><path d="M3 17v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2" />
+  </svg>
+)
+const RewardsIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+)
+const CardIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+)
+const SearchIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+)
+const QuickPayIcon = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+  </svg>
+)
+const WireIcon = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+)
+const ScheduleIcon = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+  </svg>
+)
+const ExchangeIcon = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
+    <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+  </svg>
+)
+const BillPayIcon = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="3" width="20" height="18" rx="2" />
+    <line x1="7" y1="8" x2="17" y2="8" /><line x1="7" y1="12" x2="13" y2="12" /><line x1="7" y1="16" x2="10" y2="16" />
+  </svg>
+)
+const InvestIcon = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+  </svg>
+)
+
+// 2026 exchange rates (USD base)
+const FX_RATES = { EUR: 0.8815, GBP: 0.7620 }
+
+/* Bottom nav icons */
+const HomeNavIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+)
+const CardsNavIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+)
+const WealthNavIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" />
+    <line x1="6" y1="20" x2="6" y2="16" />
+  </svg>
+)
+const NotifNavIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+)
+const SupportNavIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+)
+
+/* ── Crypto data ─────────────────────────────────────────── */
+const CRYPTO = [
+  { symbol: 'BTC', name: 'Bitcoin',  price: 72300.00,  change: +2.4, color: '#f7931a' },
+  { symbol: 'ETH', name: 'Ethereum', price: 2125.50,   change: +1.8, color: '#627eea' },
+  { symbol: 'SOL', name: 'Solana',   price: 90.14,     change: -0.6, color: '#00ffa3' },
+  { symbol: 'ADA', name: 'Cardano',  price: 0.45,      change: +3.1, color: '#0033ad' },
+  { symbol: 'DOT', name: 'Polkadot', price: 7.82,      change: -1.2, color: '#e6007a' },
+  { symbol: 'LINK', name: 'Chainlink', price: 14.56,   change: +0.9, color: '#2a5ada' },
+]
+
+/* ── Sample transactions ─────────────────────────────────── */
+function getTransactions(admin) {
+  if (!admin.balance && !admin.lastTxnAmount) return []
+  const receiverName = admin.receiverName || 'N/A'
+  const lastTxn = admin.lastTxnAmount || '0.00'
+  const balance = admin.balance || '0.00'
+  return [
+    { date: 'Today', items: [
+      { desc: `TRANSFER TO ${receiverName.toUpperCase()}`, amount: `-$${lastTxn}`, bal: `$${balance}`, debit: true },
+      { desc: 'PAYROLL DEPOSIT – EMPLOYER', amount: '+$4,200.00', bal: '$1,500,000.00', debit: false },
+    ]},
+    { date: 'Yesterday', items: [
+      { desc: 'CAPITAL ONE CRCARDPMT', amount: '-$29.00', bal: '$1,495,800.00', debit: true },
+      { desc: 'EB FROM CHECKING # xxxxxx0801', amount: '+$300.00', bal: '$1,495,829.00', debit: false },
+    ]},
+    { date: 'Mar 11, 2026', items: [
+      { desc: 'ALLSTATE INS CO INS PREM', amount: '-$655.16', bal: '$1,495,529.00', debit: true },
+      { desc: 'AMAZON MARKETPLACE', amount: '-$42.99', bal: '$1,494,873.84', debit: true },
+    ]},
+  ]
+}
+
+/* ── Crypto chart icon ────────────────────────────────────── */
+const CryptoIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+)
+
+/* ── Camera icon for profile picture ─────────────────────── */
+const CameraIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+)
+
+export default function Dashboard({ user, onLogout }) {
+  const [showReceipt, setShowReceipt] = useState(false)
+  const [showTransferOtp, setShowTransferOtp] = useState(false)
+  const [admin, setAdmin] = useState(getAdminData)
+  const [showSuspend, setShowSuspend] = useState(false)
+  const [activeTab, setActiveTab] = useState('transactions')
+  const [showAiSupport, setShowAiSupport] = useState(false)
+  const [activeNav, setActiveNav] = useState('home')
+  const [showCrypto, setShowCrypto] = useState(false)
+  const [notification, setNotification] = useState(null)
+  const [bankBalance, setBankBalance] = useState(() => {
+    return parseFloat(localStorage.getItem('bank_balance') || '0')
+  })
+  const [showIntlTransfer, setShowIntlTransfer] = useState(false)
+  const [showLocalTransfer, setShowLocalTransfer] = useState(false)
+  const [showAccountInfo, setShowAccountInfo] = useState(false)
+  const [showDeposit, setShowDeposit] = useState(false)
+  const [showBankCard, setShowBankCard] = useState(false)
+  const [showScheduled, setShowScheduled] = useState(false)
+  const [showExchange, setShowExchange] = useState(false)
+  const [showBillPay, setShowBillPay] = useState(false)
+  const [showInvestment, setShowInvestment] = useState(false)
+  const [showTxnHistory, setShowTxnHistory] = useState(false)
+  const [showFinServices, setShowFinServices] = useState(false)
+  const [exchangeUsd, setExchangeUsd] = useState('')
+  const [intlPrefill, setIntlPrefill] = useState('')
+  const [balanceHidden, setBalanceHidden] = useState(() => localStorage.getItem('privacy_state') === 'hidden')
+  const [sysAlert, setSysAlert] = useState(null)
+  const [showNotifCenter, setShowNotifCenter] = useState(false)
+  const [emailToast, setEmailToast] = useState(null)
+  const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'dark')
+  const wealthRef = useRef(null)
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    localStorage.setItem('app_theme', next)
+  }
+
+  const togglePrivacy = () => {
+    const next = !balanceHidden
+    setBalanceHidden(next)
+    localStorage.setItem('privacy_state', next ? 'hidden' : 'visible')
+  }
+
+  // Check for pending notifications
+  const checkNotifications = useCallback(() => {
+    try {
+      const raw = localStorage.getItem(NOTIF_KEY)
+      const notifs = raw ? JSON.parse(raw) : []
+      const unread = notifs.find((n) => !n.read)
+      if (unread) {
+        setNotification(unread)
+        // Mark as read
+        const updated = notifs.map((n) => n.id === unread.id ? { ...n, read: true } : n)
+        localStorage.setItem(NOTIF_KEY, JSON.stringify(updated))
+        // Auto-dismiss after 6 seconds
+        setTimeout(() => setNotification(null), 6000)
+      }
+    } catch { /* ignore parse errors */ }
+  }, [])
+
+  useEffect(() => { checkNotifications() }, [checkNotifications])
+
+  // System alert detection
+  const checkSysAlert = useCallback(() => {
+    try {
+      const raw = localStorage.getItem('system_notification')
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      const dismissedId = localStorage.getItem('system_notification_dismissed')
+      if (parsed.id && String(parsed.id) !== dismissedId) {
+        setSysAlert(parsed)
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => { checkSysAlert() }, [checkSysAlert])
+
+  const dismissSysAlert = () => {
+    if (sysAlert) localStorage.setItem('system_notification_dismissed', String(sysAlert.id))
+    setSysAlert(null)
+  }
+
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === STORAGE_KEY) setAdmin(getAdminData())
+      if (e.key === NOTIF_KEY) checkNotifications()
+      if (e.key === 'bank_balance') {
+        setBankBalance(parseFloat(e.newValue || '0'))
+      }
+      if (e.key === 'system_notification') checkSysAlert()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [checkNotifications, checkSysAlert])
+
+  // Email-sent toast listener
+  useEffect(() => {
+    const onEmail = (e) => {
+      setEmailToast(e.detail)
+      setTimeout(() => setEmailToast(null), 4000)
+    }
+    window.addEventListener('email-sent', onEmail)
+    return () => window.removeEventListener('email-sent', onEmail)
+  }, [])
+
+  useEffect(() => {
+    const onFocus = () => {
+      setAdmin(getAdminData())
+      checkNotifications()
+      checkSysAlert()
+      setBankBalance(parseFloat(localStorage.getItem('bank_balance') || '0'))
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [checkNotifications])
+
+  const balance = admin.balance || '0.00'
+  const lastTxn = admin.lastTxnAmount || '0.00'
+  const receiverName = admin.receiverName || 'N/A'
+  const accountNumber = user?.accountNumber || null
+  const maskedAcct = accountNumber ? `*${accountNumber.slice(-4)}` : ''
+  const txnDate = admin.txnDate
+    ? new Date(admin.txnDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'Mar 14, 2026'
+
+  const handleTransferTap = useCallback(() => {
+    if (admin.suspended) {
+      setShowSuspend(true)
+    } else {
+      setShowTransferOtp(true)
+    }
+  }, [admin.suspended])
+
+  const transactions = getTransactions(admin)
+
+  return (
+    <div className={`db ${theme === 'light' ? 'db--light' : ''}`}>
+      {/* Email sent toast */}
+      {emailToast && (
+        <div className="email-toast" onClick={() => setEmailToast(null)}>
+          <span className="email-toast-icon">✉️</span>
+          <div className="email-toast-body">
+            <strong>Email Confirmation Sent</strong>
+            <span>{emailToast.to}</span>
+          </div>
+        </div>
+      )}
+      {/* System Alert Popup */}
+      {sysAlert && (
+        <div className="sysalert-overlay" onClick={dismissSysAlert}>
+          <div className="sysalert-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="sysalert-icon">📢</div>
+            <h2 className="sysalert-title">System Alert</h2>
+            <p className="sysalert-msg">{sysAlert.message}</p>
+            {sysAlert.timestamp && <span className="sysalert-time">{sysAlert.timestamp}</span>}
+            <button className="sysalert-btn" onClick={dismissSysAlert}>Dismiss</button>
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
+      {showSuspend && (
+        <div className="suspend-overlay" onClick={() => setShowSuspend(false)}>
+          <div className="suspend-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="suspend-icon">🚫</div>
+            <h2 className="suspend-title">Transfers Suspended</h2>
+            <p className="suspend-msg">
+              {admin.suspendReason || 'Your account has been temporarily suspended. Please contact support for assistance.'}
+            </p>
+            <button className="suspend-close-btn" onClick={() => setShowSuspend(false)}>Understood</button>
+          </div>
+        </div>
+      )}
+      {showTransferOtp && (
+        <OtpModal
+          email={user?.email || 'user@tdbank.com'}
+          variant="transfer"
+          onVerified={() => { setShowTransferOtp(false); setShowReceipt(true) }}
+          onCancel={() => setShowTransferOtp(false)}
+        />
+      )}
+      {showAiSupport && <AiSupport onClose={() => setShowAiSupport(false)} />}
+      {showIntlTransfer && (
+        <InternationalTransfer
+          balance={bankBalance}
+          onClose={() => { setShowIntlTransfer(false); setIntlPrefill('') }}
+          onBalanceUpdate={(nb) => setBankBalance(nb)}
+          initialAmount={intlPrefill}
+        />
+      )}
+      {showLocalTransfer && (
+        <LocalTransfer
+          balance={bankBalance}
+          onClose={() => setShowLocalTransfer(false)}
+          onBalanceUpdate={(nb) => setBankBalance(nb)}
+        />
+      )}
+      {showAccountInfo && (
+        <AccountInfo
+          user={user}
+          balance={bankBalance}
+          onClose={() => setShowAccountInfo(false)}
+        />
+      )}
+      {showDeposit && (
+        <DepositOverlay
+          balance={bankBalance}
+          onClose={() => setShowDeposit(false)}
+          onBalanceUpdate={(nb) => setBankBalance(nb)}
+        />
+      )}
+      {showBankCard && (
+        <BankCard
+          user={user}
+          onClose={() => setShowBankCard(false)}
+        />
+      )}
+      {showScheduled && (
+        <ScheduledTransfer
+          balance={bankBalance}
+          onClose={() => setShowScheduled(false)}
+          onBalanceUpdate={(nb) => setBankBalance(nb)}
+        />
+      )}
+      {showBillPay && (
+        <BillPayment
+          balance={bankBalance}
+          onClose={() => setShowBillPay(false)}
+          onBalanceUpdate={(nb) => setBankBalance(nb)}
+        />
+      )}
+      {showInvestment && (
+        <Investment
+          balance={bankBalance}
+          onClose={() => setShowInvestment(false)}
+          onBalanceUpdate={(nb) => setBankBalance(nb)}
+        />
+      )}
+      {showTxnHistory && (
+        <TransactionHistory onClose={() => setShowTxnHistory(false)} />
+      )}
+      {showFinServices && (
+        <FinancialServices
+          onClose={() => setShowFinServices(false)}
+          onBalanceUpdate={(nb) => setBankBalance(nb)}
+        />
+      )}
+
+      {/* ── Green header with profile picture ────────────── */}
+      <header className="db-header">
+        <img src="/td-logo.png" alt="TD" className="td-logo-sm" width="34" height="34" />
+        <div className="db-header-left">
+          <div className="db-profile-pic">
+            {user?.profilePic ? (
+              <img src={user.profilePic} alt="" className="db-profile-img" />
+            ) : (
+              <span className="db-profile-initial">{(user?.name || 'U').charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+          <div>
+            <h1 className="db-header-title">{user?.name || 'User'}</h1>
+            {accountNumber && <span className="db-header-acct">{maskedAcct}</span>}
+          </div>
+        </div>
+        <div className="db-header-actions">
+          <button className="db-header-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
+            {theme === 'dark' ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            )}
+          </button>
+          <button className="db-header-btn" onClick={() => setShowAiSupport(true)}><HelpIcon /></button>
+        </div>
+      </header>
+
+      {/* ── Notification banner ──────────────────────────── */}
+      {notification && (
+        <div className={`db-notif db-notif--${notification.type}`} onClick={() => setNotification(null)}>
+          <div className="db-notif-icon">{notification.type === 'credit' ? '↓' : '↑'}</div>
+          <div className="db-notif-body">
+            <span className="db-notif-title">
+              {notification.type === 'credit' ? 'Credit Alert' : 'Debit Alert'}
+            </span>
+            <span className="db-notif-msg">
+              {notification.type === 'credit' ? '+' : '-'}${notification.amount} &bull; Balance: ${notification.newBalance}
+            </span>
+          </div>
+          <span className="db-notif-close">&times;</span>
+        </div>
+      )}
+
+      {/* ── Balance card ─────────────────────────────────── */}
+      <section className="db-balance-section">
+        <div className="db-balance-card">
+          <div className="db-balance-label-row">
+            <span className="db-balance-label">AVAILABLE BALANCE</span>
+            <button className="db-privacy-btn" onClick={togglePrivacy} aria-label={balanceHidden ? 'Show balance' : 'Hide balance'}>
+              {balanceHidden ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              )}
+            </button>
+          </div>
+          <div className="db-balance-amount font-mono">
+            <div className={`db-balance-reveal ${balanceHidden ? 'db-balance-reveal--hidden' : ''}`}>
+              {balanceHidden
+                ? <span className="db-balance-masked">$****.**</span>
+                : <AnimatedBalance value={bankBalance} />}
+            </div>
+          </div>
+
+          {/* Quick action icons */}
+          <div className="db-quick-row">
+            {[
+              { icon: <InfoIcon />, label: 'Info', action: () => setShowAccountInfo(true) },
+              { icon: <TransferIcon />, label: 'Transfer', action: () => {
+                if (admin.suspended) { setShowSuspend(true) } else { setShowLocalTransfer(true) }
+              }},
+              { icon: <DepositIcon />, label: 'Deposit', action: () => setShowDeposit(true) },
+              { icon: <CryptoIcon />, label: 'Crypto', action: () => setShowCrypto(!showCrypto) },
+              { icon: <CardIcon />, label: 'Card', action: () => setShowBankCard(true) },
+            ].map((a) => (
+              <button key={a.label} className="db-quick-btn" onClick={a.action}>
+                <div className={`db-quick-icon ${a.label === 'Crypto' && showCrypto ? 'db-quick-icon--active' : ''}`}>{a.icon}</div>
+                <span className="db-quick-label">{a.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Accounts ─────────────────────────────────────── */}
+      <section className="db-section">
+        <h2 className="db-section-title">Accounts</h2>
+        <div className="db-accounts-row">
+          <div className="db-account-card db-account-card--green">
+            <span className="db-account-type">Current Account</span>
+            <p className="db-account-bal font-mono"><AnimatedBalance value={bankBalance} /></p>
+            {accountNumber && <span className="db-account-num">●●●● {accountNumber.slice(-4)}</span>}
+          </div>
+          <div className="db-account-card db-account-card--dark">
+            <span className="db-account-type">Savings Vault</span>
+            <p className="db-account-bal font-mono">$0.00</p>
+            {accountNumber && <span className="db-account-num">●●●● {String(Number(accountNumber) + 1).slice(-4)}</span>}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Ad Slider ────────────────────────────────────── */}
+      <section className="db-section ad-slider-section">
+        <div className="ad-slider">
+          <div className="ad-track">
+            {/* Banner 1 – Receive Money */}
+            <div className="ad-banner ad-banner--globe">
+              <img className="ad-banner-img" src="https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800&h=400&fit=crop&q=80" alt="" />
+              <div className="ad-banner-overlay" />
+              <div className="ad-banner-content">
+                <span className="ad-badge">Global</span>
+                <h3 className="ad-title">Receive Money<br/>from Anywhere</h3>
+                <p className="ad-desc">Instant international transfers at zero fees</p>
+              </div>
+            </div>
+            {/* Banner 2 – Refer & Earn */}
+            <div className="ad-banner ad-banner--refer">
+              <img className="ad-banner-img" src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&h=400&fit=crop&q=80" alt="" />
+              <div className="ad-banner-overlay" />
+              <div className="ad-banner-content">
+                <span className="ad-badge ad-badge--gold">Reward</span>
+                <h3 className="ad-title">Refer &amp; Earn <span className="ad-highlight">$50</span></h3>
+                <p className="ad-desc">Invite friends and earn cash rewards</p>
+              </div>
+            </div>
+            {/* Banner 3 – Trusted by Millions */}
+            <div className="ad-banner ad-banner--trust">
+              <img className="ad-banner-img" src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&h=400&fit=crop&q=80" alt="" />
+              <div className="ad-banner-overlay" />
+              <div className="ad-banner-content">
+                <span className="ad-badge ad-badge--green">TD Bank</span>
+                <h3 className="ad-title">Trusted by<br/>Millions</h3>
+                <p className="ad-desc">America&rsquo;s most convenient bank since 1852</p>
+              </div>
+            </div>
+            {/* Duplicate for seamless loop */}
+            <div className="ad-banner ad-banner--globe">
+              <img className="ad-banner-img" src="https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800&h=400&fit=crop&q=80" alt="" />
+              <div className="ad-banner-overlay" />
+              <div className="ad-banner-content">
+                <span className="ad-badge">Global</span>
+                <h3 className="ad-title">Receive Money<br/>from Anywhere</h3>
+                <p className="ad-desc">Instant international transfers at zero fees</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Move Money Hub ───────────────────────────────── */}
+      <section className="db-section">
+        <h2 className="db-section-title">Move Money</h2>
+        <div className="db-move-grid">
+          {[
+            { icon: <QuickPayIcon />, label: 'Quick Pay', desc: 'Instant transfer', action: () => {
+              if (admin.suspended) { setShowSuspend(true) } else { setShowLocalTransfer(true) }
+            }},
+            { icon: <WireIcon />, label: 'Wire Transfer', desc: 'International', action: () => {
+              if (admin.suspended) { setShowSuspend(true) } else { setShowIntlTransfer(true) }
+            }},
+            { icon: <ScheduleIcon />, label: 'Scheduled', desc: 'Set & forget', action: () => {
+              if (admin.suspended) { setShowSuspend(true) } else { setShowScheduled(true) }
+            }},
+            { icon: <ExchangeIcon />, label: 'Global Exchange', desc: 'FX converter', action: () => {
+              setExchangeUsd(''); setShowExchange(true)
+            }},
+            { icon: <BillPayIcon />, label: 'Bill Payment', desc: 'Pay your bills', action: () => {
+              if (admin.suspended) { setShowSuspend(true) } else { setShowBillPay(true) }
+            }},
+            { icon: <InvestIcon />, label: 'Invest', desc: 'Stocks & ETFs', action: () => {
+              if (admin.suspended) { setShowSuspend(true) } else { setShowInvestment(true) }
+            }},
+          ].map((m) => (
+            <button key={m.label} className="db-move-tile" onClick={m.action}>
+              <div className="db-move-icon">{m.icon}</div>
+              <div>
+                <span className="db-move-label">{m.label}</span>
+                <span className="db-move-desc">{m.desc}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Weekly Spending Chart ──────────────────────────── */}
+      {(() => {
+        const history = JSON.parse(localStorage.getItem('transfer_history') || '[]')
+        const now = new Date()
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        const todayIdx = now.getDay()
+        // Build array for last 7 days
+        const days = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(now)
+          d.setDate(d.getDate() - (6 - i))
+          return {
+            label: dayNames[d.getDay()],
+            dateStr: d.toISOString().slice(0, 10),
+            isToday: i === 6,
+          }
+        })
+        // Sum amounts per day
+        days.forEach((day) => {
+          day.total = history
+            .filter((t) => t.date && t.date.slice(0, 10) === day.dateStr && t.amount > 0)
+            .reduce((sum, t) => sum + t.amount, 0)
+        })
+        const maxVal = Math.max(...days.map((d) => d.total), 1)
+        const weekTotal = days.reduce((s, d) => s + d.total, 0)
+        return (
+          <section className="db-section">
+            <h2 className="db-section-title">Weekly Spending</h2>
+            <div className="wsc-glass">
+              <div className="wsc-header">
+                <span className="wsc-label">Total Spent This Week</span>
+                <span className="wsc-total font-mono">${weekTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              <div className="wsc-chart">
+                {days.map((day, i) => (
+                  <div key={i} className={`wsc-bar-col ${day.isToday ? 'wsc-bar-col--today' : ''}`}>
+                    <div className="wsc-bar-wrap">
+                      <div
+                        className="wsc-bar"
+                        style={{ height: `${Math.max((day.total / maxVal) * 100, 4)}%` }}
+                      />
+                    </div>
+                    <span className="wsc-day-label">{day.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )
+      })()}
+
+      {/* ── Crypto Assets (toggled by Crypto quick-action button) ── */}
+      <div ref={wealthRef} />
+      {showCrypto && (
+        <section className="db-section db-crypto-section">
+          <h2 className="db-section-title">Digital Assets</h2>
+          <div className="db-crypto-list">
+            {CRYPTO.map((c) => (
+              <div key={c.symbol} className="db-crypto-row">
+                <div className="db-crypto-icon" style={{ background: c.color }}>
+                  {c.symbol.charAt(0)}
+                </div>
+                <div className="db-crypto-info">
+                  <span className="db-crypto-name">{c.name}</span>
+                  <span className="db-crypto-symbol">{c.symbol}</span>
+                </div>
+                <div className="db-crypto-price-col">
+                  <span className="db-crypto-price font-mono">
+                    ${c.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className={`db-crypto-change ${c.change >= 0 ? 'db-crypto-change--up' : 'db-crypto-change--down'}`}>
+                    {c.change >= 0 ? '+' : ''}{c.change}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Transactions & Statements ──────────────────── */}
+      <section className="db-section">
+        <div className="db-txn-header">
+          <h3 className="db-txn-title">Recent Activity</h3>
+        </div>
+        {(() => {
+          const history = JSON.parse(localStorage.getItem('transfer_history') || '[]')
+          const recent = history.slice(0, 3)
+          return recent.length > 0 ? (
+            <div className="db-txn-list">
+              {recent.map((t) => (
+                <div key={t.id} className="db-txn-item">
+                  <p className="db-txn-desc">{(t.beneficiary || 'Unknown').toUpperCase()}</p>
+                  <div className="db-txn-amounts">
+                    <span className="db-txn-amount db-txn-amount--debit font-mono">-${Number(t.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    <span className="db-txn-bal font-mono">${Number(t.balanceAfter).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="db-statements-empty"><p>No transactions yet.</p></div>
+          )
+        })()}
+        <button className="db-view-all-btn" onClick={() => setShowTxnHistory(true)}>
+          <span>View All Transactions & Statements</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </section>
+
+      {/* Transaction receipt overlay */}
+      <TransactionSuccess
+        visible={showReceipt}
+        onClose={() => setShowReceipt(false)}
+        data={{ toName: receiverName, amount: `$${lastTxn}`, date: txnDate, fromBalance: `$${balance}` }}
+      />
+
+      {/* ── Global Exchange Modal ────────────────────────── */}
+      {showExchange && (() => {
+        const usd = parseFloat(exchangeUsd.replace(/,/g, '')) || 0
+        const eur = (usd * FX_RATES.EUR).toFixed(2)
+        const gbp = (usd * FX_RATES.GBP).toFixed(2)
+        return (
+          <div className="gx-overlay" onClick={() => setShowExchange(false)}>
+            <div className="gx-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="gx-close" onClick={() => setShowExchange(false)}>&times;</button>
+              <div className="gx-header-icon">💱</div>
+              <h2 className="gx-title">Global Exchange</h2>
+              <p className="gx-subtitle">Real-time 2026 FX rates from USD</p>
+
+              <div className="gx-input-wrap">
+                <span className="gx-input-prefix">$</span>
+                <input
+                  className="gx-input"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={exchangeUsd}
+                  onChange={(e) => setExchangeUsd(e.target.value)}
+                  autoFocus
+                />
+                <span className="gx-input-tag">USD</span>
+              </div>
+
+              <div className="gx-results">
+                <div className="gx-rate-card">
+                  <div className="gx-flag">🇪🇺</div>
+                  <div className="gx-rate-info">
+                    <span className="gx-currency">EUR — Euro</span>
+                    <span className="gx-rate-label">1 USD = {FX_RATES.EUR} EUR</span>
+                  </div>
+                  <span className="gx-converted font-mono">€{usd ? Number(eur).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '0.00'}</span>
+                </div>
+                <div className="gx-rate-card">
+                  <div className="gx-flag">🇬🇧</div>
+                  <div className="gx-rate-info">
+                    <span className="gx-currency">GBP — British Pound</span>
+                    <span className="gx-rate-label">1 USD = {FX_RATES.GBP} GBP</span>
+                  </div>
+                  <span className="gx-converted font-mono">£{usd ? Number(gbp).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '0.00'}</span>
+                </div>
+              </div>
+
+              {usd > 0 && (
+                <button
+                  className="gx-use-btn"
+                  onClick={() => {
+                    setIntlPrefill(exchangeUsd.replace(/,/g, ''))
+                    setShowExchange(false)
+                    if (admin.suspended) { setShowSuspend(true) } else { setShowIntlTransfer(true) }
+                  }}
+                >
+                  Use this Rate → International Transfer
+                </button>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ── Notification Center ──────────────────────────── */}
+      {showNotifCenter && (() => {
+        const allNotifs = JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]')
+        const sysNotif = localStorage.getItem('system_notification')
+        let sysItem = null
+        try { if (sysNotif) sysItem = JSON.parse(sysNotif) } catch {}
+        const history = JSON.parse(localStorage.getItem('transfer_history') || '[]')
+        return (
+          <div className="nc-overlay" onClick={() => setShowNotifCenter(false)}>
+            <div className="nc-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="nc-header">
+                <h2 className="nc-title">Notifications</h2>
+                <button className="nc-close" onClick={() => setShowNotifCenter(false)}>&times;</button>
+              </div>
+
+              <div className="nc-list">
+                {/* System alert if any */}
+                {sysItem && (
+                  <div className="nc-item nc-item--system">
+                    <div className="nc-item-icon nc-item-icon--system">📢</div>
+                    <div className="nc-item-body">
+                      <span className="nc-item-title">System Alert</span>
+                      <span className="nc-item-msg">{sysItem.message}</span>
+                      {sysItem.timestamp && <span className="nc-item-time">{sysItem.timestamp}</span>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Transaction notifications */}
+                {allNotifs.length > 0 && allNotifs.slice().reverse().map((n, i) => (
+                  <div key={i} className={`nc-item nc-item--${n.type || 'info'}`}>
+                    <div className={`nc-item-icon nc-item-icon--${n.type || 'info'}`}>
+                      {n.type === 'credit' ? '↓' : n.type === 'debit' ? '↑' : 'ℹ'}
+                    </div>
+                    <div className="nc-item-body">
+                      <span className="nc-item-title">
+                        {n.type === 'credit' ? 'Credit Alert' : n.type === 'debit' ? 'Debit Alert' : 'Notification'}
+                      </span>
+                      <span className="nc-item-msg">
+                        {n.type === 'credit' ? '+' : '-'}${n.amount} • Balance: ${n.newBalance}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Recent transfer history */}
+                {history.slice(0, 10).map((tx) => (
+                  <div key={tx.id} className="nc-item nc-item--txn">
+                    <div className="nc-item-icon nc-item-icon--txn">💸</div>
+                    <div className="nc-item-body">
+                      <span className="nc-item-title">{tx.type === 'bill_payment' ? 'Bill Payment' : tx.type === 'international' ? 'Wire Transfer' : 'Transfer'} — {tx.ref}</span>
+                      <span className="nc-item-msg">${tx.amount?.toLocaleString('en-US', { minimumFractionDigits: 2 })} to {tx.beneficiary}</span>
+                      <span className="nc-item-time">{new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  </div>
+                ))}
+
+                {allNotifs.length === 0 && !sysItem && history.length === 0 && (
+                  <div className="nc-empty">
+                    <span className="nc-empty-icon">🔔</span>
+                    <p>No notifications yet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ── Bottom nav ───────────────────────────────────── */}
+      <nav className="db-bottomnav">
+        {[
+          { id: 'home', icon: <HomeNavIcon />, label: 'Home' },
+          { id: 'cards', icon: <CardsNavIcon />, label: 'Cards' },
+          { id: 'services', icon: <WealthNavIcon />, label: 'Services' },
+          { id: 'notifications', icon: <NotifNavIcon />, label: 'Alerts' },
+          { id: 'support', icon: <SupportNavIcon />, label: 'Support' },
+        ].map((n) => (
+          <button
+            key={n.id}
+            className={`db-navbtn ${activeNav === n.id ? 'db-navbtn--active' : ''}`}
+            onClick={() => {
+              setActiveNav(n.id)
+              if (n.id === 'home') {
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              } else if (n.id === 'cards') {
+                setShowBankCard(true)
+              } else if (n.id === 'services') {
+                setShowFinServices(true)
+              } else if (n.id === 'notifications') {
+                setShowNotifCenter(true)
+              } else if (n.id === 'support') {
+                setShowAiSupport(true)
+              }
+            }}
+          >
+            {n.icon}
+            <span className="db-navlabel">{n.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* ── FX Ticker ────────────────────────────────────── */}
+      <FxTicker />
+    </div>
+  )
+}
+
+function getTimeOfDay() {
+  const h = new Date().getHours()
+  if (h < 12) return 'morning'
+  if (h < 17) return 'afternoon'
+  return 'evening'
+}

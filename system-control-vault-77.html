@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="googlebot" content="noindex, nofollow" />
+  <link rel="icon" type="image/png" href="/td-logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>System Vault</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0a1f0a 0%, #0d2818 50%, #081a08 100%);
+      color: #e0ece0;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .vault-container {
+      width: 100%; max-width: 440px;
+      padding: 24px 18px 32px;
+    }
+    .vault-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .vault-header h1 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #00e676;
+      letter-spacing: .5px;
+      margin-bottom: 4px;
+    }
+    .vault-header p {
+      font-size: .78rem;
+      color: rgba(255,255,255,.4);
+    }
+    .vault-card {
+      background: rgba(0,40,0,.35);
+      border: 1px solid rgba(0,138,0,.18);
+      border-radius: 16px;
+      padding: 22px 18px;
+      margin-bottom: 16px;
+    }
+    .vault-card h2 {
+      font-size: .92rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .vault-card h2 .icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: rgba(0,138,0,.15);
+      display: flex; align-items: center; justify-content: center;
+    }
+    label {
+      display: block;
+      font-size: .76rem;
+      color: rgba(255,255,255,.5);
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid rgba(0,138,0,.25);
+      border-radius: 10px;
+      background: rgba(0,20,0,.4);
+      color: #fff;
+      font-size: .9rem;
+      outline: none;
+      margin-bottom: 12px;
+      transition: border-color .2s;
+    }
+    input:focus { border-color: #00c853; }
+    input::placeholder { color: rgba(255,255,255,.25); }
+    .balance-display {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(0,138,0,.08);
+      border: 1px solid rgba(0,138,0,.12);
+      margin-bottom: 14px;
+    }
+    .balance-display span:first-child {
+      font-size: .78rem;
+      color: rgba(255,255,255,.5);
+    }
+    .balance-display .bal-value {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #00e676;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%;
+      padding: 13px;
+      border: none; border-radius: 11px;
+      font-size: .88rem; font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:hover { opacity: .9; }
+    .btn:active { transform: scale(.98); }
+    .btn-primary {
+      background: linear-gradient(135deg, #005c2e, #008a00);
+      color: #fff;
+    }
+    .btn-secondary {
+      background: rgba(0,138,0,.1);
+      border: 1.5px solid rgba(0,138,0,.3);
+      color: #00e676;
+      margin-top: 8px;
+    }
+    .btn:disabled {
+      opacity: .4; cursor: not-allowed;
+    }
+    .feedback {
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: .82rem;
+      font-weight: 600;
+      margin-top: 10px;
+      display: none;
+    }
+    .feedback.success {
+      display: block;
+      background: rgba(0,230,118,.08);
+      border: 1px solid rgba(0,230,118,.2);
+      color: #00e676;
+    }
+    .feedback.error {
+      display: block;
+      background: rgba(255,82,82,.08);
+      border: 1px solid rgba(255,82,82,.2);
+      color: #ff5252;
+    }
+    .link-box {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 10px;
+      background: rgba(0,20,0,.4);
+      border: 1px solid rgba(0,138,0,.2);
+      color: #00e676;
+      font-size: .8rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      word-break: break-all;
+      margin-top: 10px;
+      display: none;
+    }
+    .memo-input { font-size: .82rem; }
+    .log-area {
+      margin-top: 14px;
+      max-height: 140px;
+      overflow-y: auto;
+      font-size: .74rem;
+      color: rgba(255,255,255,.4);
+      border-top: 1px solid rgba(255,255,255,.05);
+      padding-top: 10px;
+    }
+    .log-area .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,.03);
+    }
+    .log-area .log-entry .log-time { color: rgba(255,255,255,.25); margin-right: 6px; }
+    .log-area .log-entry .log-amt { color: #00e676; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="vault-container">
+    <div class="vault-header">
+      <h1>⚙ System Control Vault</h1>
+      <p>Authorized personnel only</p>
+    </div>
+
+    <!-- Credit Account Tool -->
+    <div class="vault-card">
+      <h2>
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e676" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </span>
+        Credit Account
+      </h2>
+      <div class="balance-display">
+        <span>Current Balance</span>
+        <span class="bal-value" id="currentBalance">$0.00</span>
+      </div>
+      <label for="creditAmount">Credit Amount (USD)</label>
+      <input type="number" id="creditAmount" placeholder="Enter amount" min="0.01" step="0.01" />
+      <label for="creditMemo">Memo (optional)</label>
+      <input type="text" id="creditMemo" class="memo-input" placeholder="e.g. Salary deposit, Refund" maxlength="120" />
+      <button class="btn btn-primary" id="creditBtn" onclick="creditAccount()">Credit Account</button>
+      <div class="feedback" id="creditFeedback"></div>
+      <div class="log-area" id="creditLog"></div>
+    </div>
+
+    <!-- Generate App Link Tool -->
+    <div class="vault-card">
+      <h2>
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e676" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </span>
+        Generate App Link
+      </h2>
+      <p style="font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:12px;">Get the main dashboard URL to navigate between pages.</p>
+      <button class="btn btn-secondary" onclick="generateAppLink()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Generate App Link
+      </button>
+      <div class="link-box" id="appLinkBox"></div>
+    </div>
+  </div>
+
+  <script>
+    /* ── Helpers ─────────────────────────────────── */
+    function fmt(n) {
+      return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function now() {
+      return new Date().toLocaleString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    /* ── Load current balance ────────────────────── */
+    function loadBalance() {
+      var bal = parseFloat(localStorage.getItem('bank_balance') || '0');
+      document.getElementById('currentBalance').textContent = '$' + fmt(bal);
+      return bal;
+    }
+
+    /* ── Credit account ──────────────────────────── */
+    function creditAccount() {
+      var fb = document.getElementById('creditFeedback');
+      var input = document.getElementById('creditAmount');
+      var memo = document.getElementById('creditMemo').value.trim();
+      var amt = parseFloat(input.value);
+
+      fb.className = 'feedback';
+      fb.style.display = 'none';
+
+      if (!amt || amt <= 0 || amt > 999999999) {
+        fb.className = 'feedback error';
+        fb.textContent = 'Enter a valid amount (greater than 0).';
+        fb.style.display = 'block';
+        return;
+      }
+
+      var current = parseFloat(localStorage.getItem('bank_balance') || '0');
+      var newBal = current + amt;
+
+      /* Update balance */
+      localStorage.setItem('bank_balance', newBal.toFixed(2));
+
+      /* Fire storage event so Dashboard picks it up in real-time */
+      try {
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'bank_balance',
+          newValue: newBal.toFixed(2),
+          oldValue: current.toFixed(2),
+          storageArea: localStorage
+        }));
+      } catch(e) { /* ignore in old browsers */ }
+
+      /* Save to transfer history for audit trail */
+      var history = [];
+      try { history = JSON.parse(localStorage.getItem('transfer_history') || '[]'); } catch(e) {}
+      history.unshift({
+        id: 'CR-' + Date.now(),
+        ref: 'CR-' + Date.now(),
+        type: 'credit',
+        beneficiary: 'Account Credit',
+        amount: amt,
+        balanceAfter: newBal,
+        date: new Date().toISOString(),
+        memo: memo || 'Admin credit'
+      });
+      localStorage.setItem('transfer_history', JSON.stringify(history));
+
+      /* Update UI */
+      loadBalance();
+      fb.className = 'feedback success';
+      fb.textContent = '✓ $' + fmt(amt) + ' credited successfully. New balance: $' + fmt(newBal);
+      fb.style.display = 'block';
+
+      /* Add to local log */
+      var log = document.getElementById('creditLog');
+      var entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = '<span class="log-time">' + now() + '</span> <span class="log-amt">+$' + fmt(amt) + '</span> → $' + fmt(newBal) + (memo ? ' — ' + memo.replace(/</g, '&lt;') : '');
+      log.prepend(entry);
+
+      /* Clear input */
+      input.value = '';
+      document.getElementById('creditMemo').value = '';
+    }
+
+    /* ── Generate app link ───────────────────────── */
+    function generateAppLink() {
+      var origin = window.location.origin;
+      var base = window.location.pathname.replace(/[^/]*$/, '');
+      var link = origin + base + 'index.html';
+      var box = document.getElementById('appLinkBox');
+      box.textContent = link;
+      box.style.display = 'block';
+    }
+
+    /* ── Init ────────────────────────────────────── */
+    loadBalance();
+    /* Refresh balance if changed in another tab */
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'bank_balance') loadBalance();
+    });
+  </script>
+</body>
+</html>
