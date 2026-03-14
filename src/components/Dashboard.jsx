@@ -14,6 +14,7 @@ import BillPayment from './BillPayment'
 import Investment from './Investment'
 import TransactionHistory from './TransactionHistory'
 import FinancialServices from './FinancialServices'
+import TDLogo from './TDLogo'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -432,7 +433,7 @@ export default function Dashboard({ user, onLogout }) {
 
       {/* ── Green header with profile picture ────────────── */}
       <header className="db-header">
-        <img src="/td-logo.png" alt="TD" className="td-logo-sm" width="34" height="34" />
+        <TDLogo size={34} className="td-logo-sm" />
         <div className="db-header-left">
           <div className="db-profile-pic">
             {user?.profilePic ? (

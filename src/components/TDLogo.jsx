@@ -1,5 +1,5 @@
 /* TD Bank – Green shield logo as inline SVG */
-export default function TDLogo({ size = 48, className = '' }) {
+export default function TDLogo({ size = 48, className = '', style }) {
   return (
     <svg
       width={size}
@@ -7,6 +7,7 @@ export default function TDLogo({ size = 48, className = '' }) {
       viewBox="0 0 120 120"
       fill="none"
       className={className}
+      style={style}
       aria-label="TD Bank logo"
     >
       {/* Shield shape */}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import TDLogo from './TDLogo'
 
 const CloseIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -106,7 +107,7 @@ export default function BankCard({ user, onClose }) {
           {/* Top row */}
           <div className="bc-card-top">
             <div className="bc-card-bank">
-              <img src="/td-logo.png" alt="TD" className="bc-card-logo" width="38" height="38" />
+              <TDLogo size={38} className="bc-card-logo" />
               <div className="bc-card-bank-text">
                 <span className="bc-card-bank-name">TD Bank</span>
                 <span className="bc-card-bank-type">VISA DEBIT</span>

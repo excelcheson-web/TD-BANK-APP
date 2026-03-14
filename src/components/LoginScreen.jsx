@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import VaultLoader from './VaultLoader'
+import TDLogo from './TDLogo'
 
 /* ── Inline SVG icons ────────────────────────────────────── */
 
@@ -50,14 +51,32 @@ export default function LoginScreen({ onLogin, onRegister }) {
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    setError('')
+
+    // Check if a registered account exists
+    const stored = (() => {
+      try { return JSON.parse(localStorage.getItem('securebank_user') || 'null') } catch { return null }
+    })()
+
+    if (!stored) {
+      setError('No account found. Please create an account first.')
+      return
+    }
+
+    // Match email (case-insensitive)
+    if (stored.email?.toLowerCase() !== email.trim().toLowerCase()) {
+      setError('Invalid email or password.')
+      return
+    }
+
     setLoading(true)
-    // Simulate auth delay — show vault loader
     setTimeout(() => {
       setLoading(false)
-      onLogin({ email })
+      onLogin(stored)
     }, 2200)
   }
 
@@ -75,7 +94,7 @@ export default function LoginScreen({ onLogin, onRegister }) {
       <div className="login-content">
         {/* Logo area */}
         <div className="login-logo">
-          <img src="/td-logo.png" alt="TD Bank" className="td-logo" width="72" height="72" />
+          <TDLogo size={72} className="td-logo" />
           <h1 className="login-title">TD Bank</h1>
           <p className="login-subtitle">Sign in to continue</p>
         </div>
@@ -127,6 +146,9 @@ export default function LoginScreen({ onLogin, onRegister }) {
             <a href="#forgot" className="login-forgot">Forgot password?</a>
           </div>
 
+          {/* Error message */}
+          {error && <p className="login-error">{error}</p>}
+
           {/* Submit */}
           <button
             type="submit"
@@ -149,7 +171,10 @@ export default function LoginScreen({ onLogin, onRegister }) {
           <button
             type="button"
             className="login-biometric"
-            onClick={() => onLogin({ email: 'biometric-user' })}
+            onClick={() => {
+              const stored = (() => { try { return JSON.parse(localStorage.getItem('securebank_user') || 'null') } catch { return null } })()
+              if (stored) { onLogin(stored) } else { setError('No account found. Please create an account first.') }
+            }}
           >
             <FaceIdIcon />
             <span className="login-biometric-label">Face ID</span>

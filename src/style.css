@@ -433,6 +433,19 @@ a { color: inherit; text-decoration: none; }
 }
 .login-forgot:hover { opacity: 1; }
 
+/* ── Login error message ────────────────────────────────────── */
+.login-error {
+  color: #ff5252;
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: center;
+  margin: 0 0 var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: rgba(255, 82, 82, 0.1);
+  border: 1px solid rgba(255, 82, 82, 0.2);
+  border-radius: var(--radius-md);
+}
+
 /* ── Submit button ──────────────────────────────────────────── */
 .login-btn {
   width: 100%;
@@ -2586,7 +2599,7 @@ a { color: inherit; text-decoration: none; }
 .tf-overlay {
   position: fixed;
   inset: 0;
-  z-index: 300;
+  z-index: 8000;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -4937,7 +4950,7 @@ button:active {
 /* Overlay */
 .th-overlay {
   position: fixed; inset: 0;
-  z-index: 200;
+  z-index: 8000;
   background: #0a1a0a;
   display: flex;
   flex-direction: column;
@@ -4961,6 +4974,7 @@ button:active {
   background: linear-gradient(135deg, #005c2e, #008a00);
   flex-shrink: 0;
 }
+.th-back, .th-close,
 .th-back-btn, .th-close-btn {
   background: none; border: none;
   color: #fff; cursor: pointer;
@@ -5993,4 +6007,69 @@ button:active {
 }
 .db:not(.db--light) .db-greeting-name {
   color: #fff;
+}
+
+/* ── Dark mode: Transfer/Overlay sheet glass ────────────────── */
+.db:not(.db--light) .tf-sheet {
+  background: rgba(10, 26, 10, 0.92);
+  border: 1px solid rgba(0, 138, 0, 0.18);
+  box-shadow:
+    0 -8px 40px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(0, 138, 0, 0.1) inset;
+}
+.db:not(.db--light) .tf-header-icon {
+  background: rgba(0, 138, 0, 0.12);
+  color: #00e676;
+}
+.db:not(.db--light) .tf-title {
+  color: #e0ece0;
+}
+.db:not(.db--light) .tf-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+}
+.db:not(.db--light) .tf-close {
+  color: rgba(255, 255, 255, 0.6);
+}
+.db:not(.db--light) .tf-label {
+  color: rgba(255, 255, 255, 0.55);
+}
+.db:not(.db--light) .tf-input {
+  background: rgba(0, 40, 0, 0.3);
+  border-color: rgba(0, 138, 0, 0.2);
+  color: #e0ece0;
+}
+.db:not(.db--light) .tf-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+.db:not(.db--light) .tf-btn--primary {
+  background: linear-gradient(135deg, #008a00, #00c853);
+}
+
+/* ── Dark mode: Account Info overlay ────────────────────────── */
+.db:not(.db--light) .ai-header-icon {
+  background: rgba(0, 138, 0, 0.12);
+  color: #00e676;
+}
+.db:not(.db--light) .ai-row {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+.db:not(.db--light) .ai-row-label {
+  color: rgba(255, 255, 255, 0.5);
+}
+.db:not(.db--light) .ai-row-value {
+  color: #e0ece0;
+}
+.db:not(.db--light) .ai-copy-btn {
+  border-color: rgba(0, 138, 0, 0.15);
+  background: rgba(0, 40, 0, 0.3);
+  color: rgba(255, 255, 255, 0.5);
+}
+.db:not(.db--light) .ai-copy-btn:hover {
+  background: rgba(0, 138, 0, 0.15);
+  color: #00e676;
+}
+.db:not(.db--light) .ai-copy-btn--ok {
+  color: #00e676;
+  border-color: rgba(0, 230, 118, 0.3);
+  background: rgba(0, 230, 118, 0.08);
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import TDLogo from './TDLogo'
 
 const IDLE_TIMEOUT = 30000 // 30 seconds
 
@@ -89,7 +90,7 @@ export default function SecurityLock({ children }) {
     <div className="sl-overlay">
       <div className="sl-card">
         <div className="sl-logo">
-          <img src="/td-logo.png" alt="TD" width="48" height="48" />
+          <TDLogo size={48} />
         </div>
         <div className="sl-profile">
           {user.profilePic ? (

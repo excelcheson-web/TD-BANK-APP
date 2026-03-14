@@ -5,7 +5,7 @@ import { resolve } from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   // Set base to '/<repo-name>/' for GitHub Pages, or '/' for custom domain
-  base: process.env.GITHUB_PAGES ? '/TD-BANK-APP/' : '/',
+  base: process.env.GITHUB_PAGES ? '/bank-app/' : '/',
   plugins: [react()],
   build: {
     rollupOptions: {

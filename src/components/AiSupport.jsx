@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import TDLogo from './TDLogo'
 
 const BOT_RESPONSES = [
   { patterns: ['balance', 'how much', 'account balance'], reply: 'Your current account balance is shown on your Portfolio Overview dashboard. For detailed statements, tap the Transactions tab.' },
@@ -99,7 +100,7 @@ export default function AiSupport({ onClose }) {
         {/* Header */}
         <div className="ai-chat-header">
           <div className="ai-chat-header-left">
-            <img src="/td-logo.png" alt="TD" className="td-logo-sm" width="40" height="40" style={{ borderRadius: '50%' }} />
+            <TDLogo size={40} className="td-logo-sm" style={{ borderRadius: '50%' }} />
             <div>
               <h3 className="ai-chat-title">TD Bank AI</h3>
               <span className="ai-chat-status">Online</span>
