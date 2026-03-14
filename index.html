@@ -217,6 +217,70 @@ button{cursor:pointer}
 .loading-inner{text-align:center;color:var(--green-glow)}
 .loading-inner .spinner{width:36px;height:36px;border-width:3px;margin:0 auto 12px}
 .loading-inner p{font-size:.9rem;font-weight:600}
+
+/* === BANK CARD VISUAL ============================================ */
+.vcard{width:100%;aspect-ratio:1.586;border-radius:16px;padding:24px 22px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,#0d3f0d 0%,#1a5c1a 40%,#008a00 100%);box-shadow:0 8px 32px rgba(0,0,0,.4);color:#fff;position:relative;overflow:hidden}
+.vcard::after{content:'';position:absolute;top:-40%;right:-20%;width:70%;height:140%;border-radius:50%;background:rgba(255,255,255,.04)}
+.vcard-top{display:flex;justify-content:space-between;align-items:flex-start}
+.vcard-logo{font-weight:800;font-size:1.3rem;letter-spacing:.02em}
+.vcard-chip{width:36px;height:28px;border-radius:5px;background:linear-gradient(135deg,#c8a84e,#daa520);opacity:.85}
+.vcard-number{font-size:1.25rem;font-weight:600;letter-spacing:.18em;font-family:var(--mono);text-align:center}
+.vcard-bottom{display:flex;justify-content:space-between;align-items:flex-end}
+.vcard-label{font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.55)}
+.vcard-value{font-size:.82rem;font-weight:600;margin-top:1px}
+.vcard-network{font-size:1.1rem;font-weight:800;font-style:italic;opacity:.8}
+.card-actions{display:flex;gap:10px;margin-top:20px}
+.card-action-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border:1px solid var(--card-border);border-radius:12px;background:var(--card);color:var(--text);font-size:.75rem;font-weight:600}
+.card-action-btn:hover{border-color:var(--green-light)}
+.card-action-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,138,0,.15);color:var(--green-glow)}
+.card-detail-list{margin-top:16px}
+.card-detail-item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.82rem}
+.card-detail-item span:first-child{color:var(--text-dim)}
+.card-detail-item span:last-child{color:var(--text);font-weight:600}
+
+/* === NOTIFICATION CENTER ========================================= */
+.notif-empty{text-align:center;padding:40px 20px;color:var(--text-muted)}
+.notif-empty svg{margin-bottom:12px;opacity:.4}
+.notif-item{display:flex;gap:12px;padding:14px;border:1px solid var(--card-border);border-radius:12px;background:var(--card);margin-bottom:10px}
+.notif-item.unread{border-left:3px solid var(--green-glow)}
+.notif-icon-wrap{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.notif-icon-wrap.green{background:rgba(0,138,0,.15);color:var(--green-glow)}
+.notif-icon-wrap.blue{background:rgba(59,130,246,.15);color:#60a5fa}
+.notif-icon-wrap.orange{background:rgba(245,158,11,.15);color:#fbbf24}
+.notif-icon-wrap.red{background:rgba(239,68,68,.15);color:#f87171}
+.notif-body{flex:1;min-width:0}
+.notif-title{font-size:.84rem;font-weight:600;color:var(--text)}
+.notif-text{font-size:.74rem;color:var(--text-dim);margin-top:2px;line-height:1.4}
+.notif-time{font-size:.64rem;color:var(--text-muted);margin-top:4px}
+.notif-clear-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;margin-top:6px;border:1px solid rgba(255,82,82,.2);border-radius:10px;background:rgba(255,82,82,.06);color:var(--red);font-size:.8rem;font-weight:600}
+
+/* === SERVICES ==================================================== */
+.svc-card{border:1px solid var(--card-border);border-radius:var(--radius);background:var(--card);overflow:hidden;margin-bottom:12px}
+.svc-card-img{width:100%;height:110px;object-fit:cover}
+.svc-card-body{padding:14px}
+.svc-card-title{font-size:.92rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.svc-card-desc{font-size:.74rem;color:var(--text-dim);line-height:1.4;margin-bottom:10px}
+.svc-card-rate{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(0,138,0,.12);color:var(--green-glow);margin-bottom:10px}
+.svc-apply-btn{width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#005c2e,#008a00);color:#fff;font-size:.84rem;font-weight:700}
+
+/* === INVEST / BILL PAY =========================================== */
+.stock-row{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--card-border);border-radius:12px;background:var(--card);margin-bottom:8px}
+.stock-sym-wrap{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;color:#fff;flex-shrink:0}
+.stock-info{flex:1}
+.stock-name{font-size:.84rem;font-weight:600;color:var(--text)}
+.stock-sym{font-size:.68rem;color:var(--text-muted)}
+.stock-price{text-align:right}
+.stock-price-val{font-size:.88rem;font-weight:700;color:var(--text);font-family:var(--mono)}
+.stock-change{font-size:.72rem;font-weight:600}
+.stock-change.up{color:var(--green-glow)}
+.stock-change.down{color:var(--red)}
+.stock-buy-btn{padding:6px 14px;border:1.5px solid rgba(0,138,0,.3);border-radius:8px;background:rgba(0,138,0,.1);color:var(--green-glow);font-size:.72rem;font-weight:700;margin-top:4px}
+.bill-cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.bill-cat{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 8px;border:1px solid var(--card-border);border-radius:12px;background:var(--card);cursor:pointer;transition:border-color .2s}
+.bill-cat:hover{border-color:var(--green-light)}
+.bill-cat-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.bill-cat-name{font-size:.72rem;font-weight:600;color:var(--text);text-align:center}
+.bill-form{margin-top:16px}
 </style>
 </head>
 <body>
@@ -267,8 +331,8 @@ button{cursor:pointer}
         <button class="quick-btn" onclick="openAccountInfo()"><div class="quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div><span class="quick-label">Info</span></button>
         <button class="quick-btn" onclick="startTransfer('local')"><div class="quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div><span class="quick-label">Transfer</span></button>
         <button class="quick-btn" onclick="openDeposit()"><div class="quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div><span class="quick-label">Deposit</span></button>
-        <button class="quick-btn" onclick="toggleCrypto()"><div class="quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12m-3-9h4.5a1.5 1.5 0 0 1 0 3H9m0 0h5a1.5 1.5 0 0 1 0 3H9"/></svg></div><span class="quick-label">Crypto</span></button>
-        <button class="quick-btn" onclick="openCardInfo()"><div class="quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><span class="quick-label">Card</span></button>
+        <button class="quick-btn" onclick="openCryptoOv()"><div class="quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12m-3-9h4.5a1.5 1.5 0 0 1 0 3H9m0 0h5a1.5 1.5 0 0 1 0 3H9"/></svg></div><span class="quick-label">Crypto</span></button>
+        <button class="quick-btn" onclick="openCardOverlay()"><div class="quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><span class="quick-label">Card</span></button>
       </div>
     </div>
   </div>
@@ -322,11 +386,11 @@ button{cursor:pointer}
         <div class="move-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
         <span class="move-label">Exchange</span><span class="move-desc">FX converter</span>
       </div>
-      <div class="move-tile" onclick="startTransfer('local')">
+      <div class="move-tile" onclick="openBill()">
         <div class="move-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
         <span class="move-label">Bill Payment</span><span class="move-desc">Pay bills</span>
       </div>
-      <div class="move-tile" onclick="alert('Investment feature — coming soon in this lite version.')">
+      <div class="move-tile" onclick="openInvest()">
         <div class="move-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div>
         <span class="move-label">Invest</span><span class="move-desc">Stocks &amp; ETFs</span>
       </div>
@@ -361,9 +425,9 @@ button{cursor:pointer}
   <!-- Bottom Nav -->
   <nav class="bottom-nav">
     <button class="nav-btn active" onclick="selectNav(this,'home')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
-    <button class="nav-btn" onclick="selectNav(this,'cards');openCardInfo()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span>Cards</span></button>
-    <button class="nav-btn" onclick="selectNav(this,'services')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Services</span></button>
-    <button class="nav-btn" onclick="selectNav(this,'alerts')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Alerts</span></button>
+    <button class="nav-btn" onclick="selectNav(this,'cards');openCardOverlay()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span>Cards</span></button>
+    <button class="nav-btn" onclick="selectNav(this,'services');openServices()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Services</span></button>
+    <button class="nav-btn" onclick="selectNav(this,'alerts');openNotif()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Alerts</span></button>
     <button class="nav-btn" onclick="selectNav(this,'support')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Support</span></button>
   </nav>
 </div>
@@ -461,6 +525,134 @@ button{cursor:pointer}
   </div>
 </div>
 
+<!-- === CARD OVERLAY ============================================== -->
+<div id="cardOverlay" class="overlay hidden">
+  <div class="overlay-page">
+    <div class="overlay-header">
+      <button onclick="closeCard()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <h2>My Card</h2>
+      <button onclick="closeCard()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="overlay-scroll">
+      <div class="vcard">
+        <div class="vcard-top"><span class="vcard-logo">TD</span><div class="vcard-chip"></div></div>
+        <div class="vcard-number" id="cardNumber">●●●● ●●●● ●●●● 0000</div>
+        <div class="vcard-bottom"><div><div class="vcard-label">Card Holder</div><div class="vcard-value" id="cardHolder">USER</div></div><div><div class="vcard-label">Expires</div><div class="vcard-value">12/28</div></div><div class="vcard-network">VISA</div></div>
+      </div>
+      <div class="card-actions">
+        <button class="card-action-btn" onclick="toggleCardFreeze()"><div class="card-action-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><span id="freezeLabel">Freeze</span></button>
+        <button class="card-action-btn" onclick="toggleCardPin()"><div class="card-action-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m-5.66-2.34l4.24-4.24m0-2.83l-4.24-4.24m11.32 0l-4.24 4.24m0 2.83l4.24 4.24"/></svg></div>View PIN</button>
+        <button class="card-action-btn" onclick="setCardLimit()"><div class="card-action-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>Limits</button>
+      </div>
+      <div class="card-detail-list">
+        <div class="card-detail-item"><span>Card Type</span><span>Visa Debit</span></div>
+        <div class="card-detail-item"><span>Status</span><span id="cardStatus" style="color:var(--green-glow)">Active</span></div>
+        <div class="card-detail-item"><span>Daily Limit</span><span id="cardLimit">$5,000.00</span></div>
+        <div class="card-detail-item"><span>ATM Limit</span><span>$1,000.00</span></div>
+        <div class="card-detail-item"><span>Online Payments</span><span style="color:var(--green-glow)">Enabled</span></div>
+        <div class="card-detail-item"><span>Contactless</span><span style="color:var(--green-glow)">Enabled</span></div>
+        <div class="card-detail-item"><span>Network</span><span>Visa / Interac</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- === NOTIFICATION OVERLAY ====================================== -->
+<div id="notifOverlay" class="overlay hidden">
+  <div class="overlay-page">
+    <div class="overlay-header">
+      <button onclick="closeNotif()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <h2>Notifications</h2>
+      <button onclick="closeNotif()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="overlay-scroll" id="notifList"></div>
+  </div>
+</div>
+
+<!-- === SERVICES OVERLAY ========================================== -->
+<div id="servicesOverlay" class="overlay hidden">
+  <div class="overlay-page">
+    <div class="overlay-header">
+      <button onclick="closeServices()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <h2>Financial Services</h2>
+      <button onclick="closeServices()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="overlay-scroll" id="servicesList"></div>
+  </div>
+</div>
+
+<!-- === CRYPTO OVERLAY ============================================ -->
+<div id="cryptoOverlay" class="overlay hidden">
+  <div class="overlay-page">
+    <div class="overlay-header">
+      <button onclick="closeCryptoOv()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <h2>Crypto Portfolio</h2>
+      <button onclick="closeCryptoOv()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="overlay-scroll" id="cryptoOvList"></div>
+  </div>
+</div>
+
+<!-- === INVEST OVERLAY ============================================ -->
+<div id="investOverlay" class="overlay hidden">
+  <div class="overlay-page">
+    <div class="overlay-header">
+      <button onclick="closeInvest()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <h2>Investments</h2>
+      <button onclick="closeInvest()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="overlay-scroll" id="investList"></div>
+  </div>
+</div>
+
+<!-- === BILL PAYMENT OVERLAY ====================================== -->
+<div id="billOverlay" class="overlay hidden">
+  <div class="overlay-page">
+    <div class="overlay-header">
+      <button onclick="closeBill()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <h2>Bill Payment</h2>
+      <button onclick="closeBill()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="overlay-scroll">
+      <div id="billCatView">
+        <p style="font-size:.84rem;color:var(--text-dim);margin-bottom:14px;text-align:center">Select a bill category</p>
+        <div class="bill-cat-grid">
+          <div class="bill-cat" onclick="pickBillCat('Electricity')"><div class="bill-cat-icon" style="background:rgba(250,204,21,.12)">⚡</div><span class="bill-cat-name">Electricity</span></div>
+          <div class="bill-cat" onclick="pickBillCat('Water')"><div class="bill-cat-icon" style="background:rgba(59,130,246,.12)">💧</div><span class="bill-cat-name">Water</span></div>
+          <div class="bill-cat" onclick="pickBillCat('Internet')"><div class="bill-cat-icon" style="background:rgba(139,92,246,.12)">🌐</div><span class="bill-cat-name">Internet</span></div>
+          <div class="bill-cat" onclick="pickBillCat('Phone')"><div class="bill-cat-icon" style="background:rgba(34,197,94,.12)">📱</div><span class="bill-cat-name">Phone</span></div>
+          <div class="bill-cat" onclick="pickBillCat('Insurance')"><div class="bill-cat-icon" style="background:rgba(244,63,94,.12)">🛡️</div><span class="bill-cat-name">Insurance</span></div>
+          <div class="bill-cat" onclick="pickBillCat('Gas')"><div class="bill-cat-icon" style="background:rgba(249,115,22,.12)">🔥</div><span class="bill-cat-name">Gas</span></div>
+          <div class="bill-cat" onclick="pickBillCat('Rent')"><div class="bill-cat-icon" style="background:rgba(99,102,241,.12)">🏠</div><span class="bill-cat-name">Rent</span></div>
+          <div class="bill-cat" onclick="pickBillCat('Cable TV')"><div class="bill-cat-icon" style="background:rgba(236,72,153,.12)">📺</div><span class="bill-cat-name">Cable TV</span></div>
+          <div class="bill-cat" onclick="pickBillCat('Other')"><div class="bill-cat-icon" style="background:rgba(107,114,128,.12)">📄</div><span class="bill-cat-name">Other</span></div>
+        </div>
+      </div>
+      <div id="billFormView" class="hidden">
+        <div class="bill-form">
+          <p style="font-size:.8rem;font-weight:700;color:var(--green-glow);margin-bottom:14px" id="billCatLabel">Electricity</p>
+          <div class="form-group"><label class="form-label">Provider / Company</label><input class="form-input" id="billProvider" placeholder="e.g. Con Edison"/></div>
+          <div class="form-group"><label class="form-label">Account / Reference No.</label><input class="form-input" id="billAcctNum" placeholder="e.g. 1234567890"/></div>
+          <div class="form-group"><label class="form-label">Amount ($)</label><input class="form-input" id="billAmount" inputmode="decimal" placeholder="0.00"/></div>
+          <p class="form-hint" id="billBalHint">Available: $0.00</p>
+          <div id="billError" style="color:var(--red);font-size:.82rem;margin-top:8px"></div>
+          <button class="primary-btn" id="billSubmitBtn" onclick="submitBill()">Pay Bill</button>
+          <button class="secondary-btn" onclick="backToBillCats()" style="margin-top:8px">← Back to Categories</button>
+        </div>
+      </div>
+      <div id="billReceiptView" class="hidden">
+        <div class="success-container">
+          <div class="success-icon"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#00e676" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg></div>
+          <h3 class="success-title">Payment Successful!</h3>
+          <p class="success-sub" id="billReceiptSub"></p>
+          <div class="detail-card" id="billReceiptDetails"></div>
+          <button class="primary-btn" onclick="closeBill()">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- === SUSPEND MODAL ============================================= -->
 <div id="suspendModal" class="suspend-overlay hidden">
   <div class="suspend-card">
@@ -540,6 +732,7 @@ q('eyeBtn').onclick=function(){
   updatePrivacy();
   refreshBalance();
 };
+q('notifBtn').onclick=function(){openNotif()};
 function updatePrivacy(){
   if(privacyHidden){hide(q('eyeOpen'));show(q('eyeClosed'))}
   else{show(q('eyeOpen'));hide(q('eyeClosed'))}
@@ -758,30 +951,265 @@ function openAccountInfo(){
   alert('━━━ Account Information ━━━\n\nName: '+(u.name||'N/A')+'\nEmail: '+(u.email||'N/A')+'\nAccount: '+(u.accountNumber||'N/A')+'\nBalance: $'+fmt(bal)+'\nType: Chequing Account\nBank: TD Bank, N.A.\nSWIFT: TDOMUS33');
 }
 
-/* === CARD INFO =================================================== */
-function openCardInfo(){
+/* === CARD OVERLAY ================================================ */
+var cardFrozen=localStorage.getItem('card_frozen')==='true';
+function openCardOverlay(){
   var u=getUser();
   var last4=u.accountNumber?u.accountNumber.slice(-4):'0000';
-  alert('━━━ TD Visa Debit ━━━\n\n●●●● ●●●● ●●●● '+last4+'\n\nHolder: '+(u.name||'N/A')+'\nExpiry: 12/28\nType: Visa Debit\nStatus: Active');
+  q('cardNumber').textContent='●●●● ●●●● ●●●● '+last4;
+  q('cardHolder').textContent=(u.name||'TD CUSTOMER').toUpperCase();
+  q('cardStatus').textContent=cardFrozen?'Frozen':'Active';
+  q('cardStatus').style.color=cardFrozen?'var(--red)':'var(--green-glow)';
+  q('freezeLabel').textContent=cardFrozen?'Unfreeze':'Freeze';
+  show(q('cardOverlay'));
+}
+function closeCard(){hide(q('cardOverlay'))}
+function toggleCardFreeze(){
+  cardFrozen=!cardFrozen;
+  localStorage.setItem('card_frozen',cardFrozen?'true':'false');
+  q('cardStatus').textContent=cardFrozen?'Frozen':'Active';
+  q('cardStatus').style.color=cardFrozen?'var(--red)':'var(--green-glow)';
+  q('freezeLabel').textContent=cardFrozen?'Unfreeze':'Freeze';
+  addNotification(cardFrozen?'Card Frozen':'Card Unfrozen',cardFrozen?'Your debit card has been frozen. No transactions allowed.':'Your debit card is now active again.','orange');
+}
+function toggleCardPin(){
+  var u=getUser();
+  var pin=u.pin||'••••';
+  alert('Your Card PIN: '+pin+'\n\nKeep this confidential.');
+}
+function setCardLimit(){
+  var cur=localStorage.getItem('card_daily_limit')||'5000';
+  var val=prompt('Set daily spending limit ($):',cur);
+  if(val&&!isNaN(parseFloat(val))&&parseFloat(val)>0){
+    localStorage.setItem('card_daily_limit',parseFloat(val).toFixed(2));
+    q('cardLimit').textContent='$'+fmt(parseFloat(val));
+    addNotification('Card Limit Updated','Daily spending limit set to $'+fmt(parseFloat(val)),'green');
+  }
+}
+function openCardInfo(){openCardOverlay()}
+
+/* === NOTIFICATION CENTER ========================================= */
+function getNotifications(){try{return JSON.parse(localStorage.getItem('securebank_notifications')||'[]')}catch(e){return[]}}
+function saveNotifications(n){localStorage.setItem('securebank_notifications',JSON.stringify(n))}
+function addNotification(title,text,color){
+  var notifs=getNotifications();
+  notifs.unshift({id:Date.now(),title:title,text:text,color:color||'green',time:new Date().toISOString(),read:false});
+  saveNotifications(notifs);
+}
+function openNotif(){
+  renderNotifList();
+  show(q('notifOverlay'));
+}
+function closeNotif(){hide(q('notifOverlay'))}
+function renderNotifList(){
+  var notifs=getNotifications();
+  if(!notifs.length){
+    q('notifList').innerHTML='<div class="notif-empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><p style="font-size:.9rem;font-weight:600;margin-bottom:4px">No notifications</p><p style="font-size:.78rem">You\'re all caught up!</p></div>';
+    return;
+  }
+  var html=notifs.map(function(n){
+    var ago=timeAgo(n.time);
+    var cls=n.read?'':'unread';
+    return '<div class="notif-item '+cls+'"><div class="notif-icon-wrap '+(n.color||'green')+'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><div class="notif-body"><div class="notif-title">'+n.title+'</div><div class="notif-text">'+n.text+'</div><div class="notif-time">'+ago+'</div></div></div>';
+  }).join('');
+  html+='<button class="notif-clear-btn" onclick="clearNotifs()">Clear All Notifications</button>';
+  q('notifList').innerHTML=html;
+  /* Mark all as read */
+  notifs.forEach(function(n){n.read=true});
+  saveNotifications(notifs);
+}
+function clearNotifs(){saveNotifications([]);renderNotifList()}
+function timeAgo(iso){
+  var diff=Date.now()-new Date(iso).getTime();
+  var m=Math.floor(diff/60000);
+  if(m<1)return 'Just now';
+  if(m<60)return m+'m ago';
+  var h=Math.floor(m/60);
+  if(h<24)return h+'h ago';
+  var d=Math.floor(h/24);
+  return d+'d ago';
 }
 
-/* === CRYPTO ====================================================== */
-var cryptoData=[
-  {sym:'BTC',name:'Bitcoin',price:72300,change:2.4,color:'#f7931a'},
-  {sym:'ETH',name:'Ethereum',price:2125.50,change:1.8,color:'#627eea'},
-  {sym:'SOL',name:'Solana',price:90.14,change:-0.6,color:'#00ffa3'},
-  {sym:'ADA',name:'Cardano',price:0.45,change:3.1,color:'#0033ad'}
+/* === FINANCIAL SERVICES ========================================== */
+var servicesData=[
+  {id:'loan',title:'Personal Loan',desc:'Low-rate personal loans from 5.9% APR. Borrow $1,000 – $50,000 with flexible terms up to 60 months.',rate:'From 5.9% APR',img:'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=250&fit=crop&q=80',color:'#16a34a'},
+  {id:'pension',title:'Pension & Retirement',desc:'Secure your future with TD Retirement Plans. Employer-matched contributions and tax-advantaged savings.',rate:'Up to 8% match',img:'https://images.unsplash.com/photo-1559526324-593bc073d938?w=600&h=250&fit=crop&q=80',color:'#2563eb'},
+  {id:'fund',title:'Mutual Funds',desc:'Professionally managed portfolios with diversified exposure to stocks, bonds, and global markets.',rate:'7-12% avg return',img:'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=250&fit=crop&q=80',color:'#7c3aed'},
+  {id:'mmf',title:'Money Market Fund',desc:'High-yield money market accounts with daily liquidity. FDIC insured up to $250,000.',rate:'5.25% APY',img:'https://images.unsplash.com/photo-1518458028785-8b0d7e8c3548?w=600&h=250&fit=crop&q=80',color:'#ca8a04'}
 ];
+function openServices(){renderServicesList();show(q('servicesOverlay'))}
+function closeServices(){hide(q('servicesOverlay'))}
+function renderServicesList(){
+  q('servicesList').innerHTML=servicesData.map(function(s){
+    return '<div class="svc-card"><img class="svc-card-img" src="'+s.img+'" alt="'+s.title+'"/><div class="svc-card-body"><div class="svc-card-title">'+s.title+'</div><div class="svc-card-desc">'+s.desc+'</div><span class="svc-card-rate">'+s.rate+'</span><button class="svc-apply-btn" onclick="applyService(\''+s.id+'\')">Apply Now</button></div></div>';
+  }).join('');
+}
+function applyService(id){
+  var svc=servicesData.find(function(s){return s.id===id});
+  if(!svc)return;
+  addNotification('Application Submitted','Your '+svc.title+' application has been received. A specialist will contact you within 24 hours.','green');
+  var hist=getHistory();
+  hist.unshift({id:Date.now(),ref:genRef('SVC'),type:'service_application',beneficiary:svc.title+' Application',amount:0,balanceAfter:getBalance(),date:new Date().toISOString()});
+  saveHistory(hist);
+  alert('✓ Application Submitted!\n\nYour '+svc.title+' application has been received.\nA TD specialist will contact you within 24 hours.');
+}
+
+/* === CRYPTO PORTFOLIO ============================================ */
+var cryptoData=[
+  {sym:'BTC',name:'Bitcoin',price:72300,change:2.4,color:'#f7931a',held:0},
+  {sym:'ETH',name:'Ethereum',price:2125.50,change:1.8,color:'#627eea',held:0},
+  {sym:'SOL',name:'Solana',price:90.14,change:-0.6,color:'#00ffa3',held:0},
+  {sym:'ADA',name:'Cardano',price:0.45,change:3.1,color:'#0033ad',held:0},
+  {sym:'DOT',name:'Polkadot',price:6.82,change:-1.2,color:'#e6007a',held:0},
+  {sym:'AVAX',name:'Avalanche',price:35.40,change:4.5,color:'#e84142',held:0}
+];
+function loadCryptoHoldings(){try{var h=JSON.parse(localStorage.getItem('crypto_holdings')||'{}');cryptoData.forEach(function(c){c.held=h[c.sym]||0})}catch(e){}}
+function saveCryptoHoldings(){var h={};cryptoData.forEach(function(c){if(c.held>0)h[c.sym]=c.held});localStorage.setItem('crypto_holdings',JSON.stringify(h))}
+function openCryptoOv(){
+  loadCryptoHoldings();
+  renderCryptoOv();
+  show(q('cryptoOverlay'));
+}
+function closeCryptoOv(){hide(q('cryptoOverlay'))}
 function renderCrypto(){
-  q('cryptoList').innerHTML=cryptoData.map(function(c){
+  q('cryptoList').innerHTML=cryptoData.slice(0,4).map(function(c){
     var cls=c.change>=0?'up':'down';
     var sign=c.change>=0?'+':'';
     return '<div class="crypto-row"><div class="crypto-icon" style="background:'+c.color+'">'+c.sym.charAt(0)+'</div><div class="crypto-info"><div><div class="crypto-name">'+c.name+'</div><div class="crypto-sym">'+c.sym+'</div></div><div><div class="crypto-price">$'+fmt(c.price)+'</div><div class="crypto-change '+cls+'">'+sign+c.change+'%</div></div></div></div>';
   }).join('');
 }
-function toggleCrypto(){
-  var s=q('cryptoSection');
-  if(s.classList.contains('hidden'))show(s);else hide(s);
+function renderCryptoOv(){
+  loadCryptoHoldings();
+  var totalVal=0;
+  cryptoData.forEach(function(c){totalVal+=c.held*c.price});
+  var html='<div class="detail-card" style="text-align:center;margin-bottom:20px"><div style="font-size:.72rem;color:var(--text-dim);margin-bottom:4px">PORTFOLIO VALUE</div><div style="font-size:1.6rem;font-weight:800;color:var(--green-glow);font-family:var(--mono)">$'+fmt(totalVal)+'</div></div>';
+  html+=cryptoData.map(function(c){
+    var cls=c.change>=0?'up':'down';
+    var sign=c.change>=0?'+':'';
+    var val=c.held*c.price;
+    return '<div class="stock-row"><div class="stock-sym-wrap" style="background:'+c.color+'">'+c.sym.charAt(0)+'</div><div class="stock-info"><div class="stock-name">'+c.name+'</div><div class="stock-sym">'+c.sym+(c.held>0?' · '+c.held.toFixed(4)+' held':'')+'</div></div><div class="stock-price"><div class="stock-price-val">$'+fmt(c.price)+'</div><div class="stock-change '+cls+'">'+sign+c.change+'%</div>'+(c.held>0?'<div style="font-size:.65rem;color:var(--text-muted);margin-top:2px">≈ $'+fmt(val)+'</div>':'')+'<button class="stock-buy-btn" onclick="buyCrypto(\''+c.sym+'\')">Buy</button></div></div>';
+  }).join('');
+  q('cryptoOvList').innerHTML=html;
+}
+function buyCrypto(sym){
+  var c=cryptoData.find(function(x){return x.sym===sym});
+  if(!c)return;
+  var val=prompt('Buy '+c.name+' ('+c.sym+')\nCurrent price: $'+fmt(c.price)+'\n\nEnter USD amount:','100');
+  if(!val||isNaN(parseFloat(val))||parseFloat(val)<=0)return;
+  var usd=parseFloat(val);
+  var bal=getBalance();
+  if(usd>bal){alert('Insufficient balance.');return}
+  var qty=usd/c.price;
+  c.held+=qty;
+  saveCryptoHoldings();
+  var newBal=bal-usd;
+  setBalanceVal(newBal);
+  var hist=getHistory();
+  hist.unshift({id:Date.now(),ref:genRef('CRY'),type:'crypto_buy',beneficiary:'Buy '+c.sym+' ('+qty.toFixed(6)+' units)',amount:usd,balanceAfter:newBal,date:new Date().toISOString()});
+  saveHistory(hist);
+  refreshBalance();
+  renderCryptoOv();
+  addNotification('Crypto Purchased','Bought '+qty.toFixed(6)+' '+c.sym+' for $'+fmt(usd),'green');
+}
+function toggleCrypto(){openCryptoOv()}
+
+/* === INVESTMENTS ================================================= */
+var stocksData=[
+  {sym:'AAPL',name:'Apple Inc.',price:178.50,change:1.2,color:'#333'},
+  {sym:'MSFT',name:'Microsoft',price:420.80,change:0.8,color:'#0078d4'},
+  {sym:'GOOGL',name:'Alphabet',price:155.30,change:-0.4,color:'#4285f4'},
+  {sym:'AMZN',name:'Amazon',price:185.60,change:2.1,color:'#ff9900'},
+  {sym:'TSLA',name:'Tesla',price:245.20,change:-1.8,color:'#cc0000'},
+  {sym:'NVDA',name:'NVIDIA',price:875.40,change:3.5,color:'#76b900'},
+  {sym:'SPY',name:'S&P 500 ETF',price:520.15,change:0.6,color:'#1a5c1a'},
+  {sym:'QQQ',name:'Nasdaq 100 ETF',price:445.90,change:1.1,color:'#0d3f7a'}
+];
+function loadStockHoldings(){try{var h=JSON.parse(localStorage.getItem('stock_holdings')||'{}');stocksData.forEach(function(s){s.held=h[s.sym]||0})}catch(e){stocksData.forEach(function(s){s.held=0})}}
+function saveStockHoldings(){var h={};stocksData.forEach(function(s){if(s.held>0)h[s.sym]=s.held});localStorage.setItem('stock_holdings',JSON.stringify(h))}
+function openInvest(){
+  loadStockHoldings();
+  renderInvestList();
+  show(q('investOverlay'));
+}
+function closeInvest(){hide(q('investOverlay'))}
+function renderInvestList(){
+  var totalVal=0;
+  stocksData.forEach(function(s){totalVal+=(s.held||0)*s.price});
+  var html='<div class="detail-card" style="text-align:center;margin-bottom:20px"><div style="font-size:.72rem;color:var(--text-dim);margin-bottom:4px">INVESTMENT PORTFOLIO</div><div style="font-size:1.6rem;font-weight:800;color:var(--green-glow);font-family:var(--mono)">$'+fmt(totalVal)+'</div></div>';
+  html+=stocksData.map(function(s){
+    var cls=s.change>=0?'up':'down';
+    var sign=s.change>=0?'+':'';
+    var val=(s.held||0)*s.price;
+    return '<div class="stock-row"><div class="stock-sym-wrap" style="background:'+s.color+'">'+s.sym.charAt(0)+'</div><div class="stock-info"><div class="stock-name">'+s.name+'</div><div class="stock-sym">'+s.sym+(s.held>0?' · '+s.held.toFixed(2)+' shares':'')+'</div></div><div class="stock-price"><div class="stock-price-val">$'+fmt(s.price)+'</div><div class="stock-change '+cls+'">'+sign+s.change+'%</div>'+(s.held>0?'<div style="font-size:.65rem;color:var(--text-muted);margin-top:2px">≈ $'+fmt(val)+'</div>':'')+'<button class="stock-buy-btn" onclick="buyStock(\''+s.sym+'\')">Buy</button></div></div>';
+  }).join('');
+  q('investList').innerHTML=html;
+}
+function buyStock(sym){
+  var s=stocksData.find(function(x){return x.sym===sym});
+  if(!s)return;
+  var val=prompt('Buy '+s.name+' ('+s.sym+')\nCurrent price: $'+fmt(s.price)+'\n\nEnter USD amount:','500');
+  if(!val||isNaN(parseFloat(val))||parseFloat(val)<=0)return;
+  var usd=parseFloat(val);
+  var bal=getBalance();
+  if(usd>bal){alert('Insufficient balance.');return}
+  var qty=usd/s.price;
+  s.held=(s.held||0)+qty;
+  saveStockHoldings();
+  var newBal=bal-usd;
+  setBalanceVal(newBal);
+  var hist=getHistory();
+  hist.unshift({id:Date.now(),ref:genRef('INV'),type:'stock_buy',beneficiary:'Buy '+s.sym+' ('+qty.toFixed(4)+' shares)',amount:usd,balanceAfter:newBal,date:new Date().toISOString()});
+  saveHistory(hist);
+  refreshBalance();
+  renderInvestList();
+  addNotification('Stock Purchased','Bought '+qty.toFixed(4)+' shares of '+s.sym+' for $'+fmt(usd),'blue');
+}
+
+/* === BILL PAYMENT ================================================ */
+var billCategory='';
+function openBill(){
+  if(isSuspended())return;
+  show(q('billCatView'));hide(q('billFormView'));hide(q('billReceiptView'));
+  q('billError').textContent='';q('billAmount').value='';q('billProvider').value='';q('billAcctNum').value='';
+  q('billBalHint').textContent='Available: $'+fmt(getBalance());
+  show(q('billOverlay'));
+}
+function closeBill(){hide(q('billOverlay'));refreshBalance();renderRecentTxns()}
+function pickBillCat(cat){
+  billCategory=cat;
+  q('billCatLabel').textContent=cat;
+  q('billBalHint').textContent='Available: $'+fmt(getBalance());
+  hide(q('billCatView'));show(q('billFormView'));
+}
+function backToBillCats(){hide(q('billFormView'));show(q('billCatView'))}
+function submitBill(){
+  var provider=q('billProvider').value.trim();
+  var acctNum=q('billAcctNum').value.trim();
+  var amt=parseFloat(q('billAmount').value);
+  var bal=getBalance();
+  var err='';
+  if(!provider) err='Enter provider name.';
+  else if(!acctNum) err='Enter account/reference number.';
+  else if(!amt||amt<=0) err='Enter a valid amount.';
+  else if(amt>bal) err='Insufficient balance.';
+  if(err){q('billError').textContent=err;return}
+  q('billError').textContent='';
+  var btn=q('billSubmitBtn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';
+  setTimeout(function(){
+    var newBal=bal-amt;
+    var ref=genRef('BIL');
+    setBalanceVal(newBal);
+    var hist=getHistory();
+    hist.unshift({id:Date.now(),ref:ref,type:'bill_payment',beneficiary:billCategory+' - '+provider,amount:amt,balanceAfter:newBal,date:new Date().toISOString()});
+    saveHistory(hist);
+    refreshBalance();
+    q('billReceiptSub').textContent='$'+fmt(amt)+' paid to '+provider;
+    q('billReceiptDetails').innerHTML='<div class="detail-row"><span>Reference</span><span>'+ref+'</span></div><div class="detail-row"><span>Category</span><span>'+billCategory+'</span></div><div class="detail-row"><span>Provider</span><span>'+provider+'</span></div><div class="detail-row"><span>Account No.</span><span>'+acctNum+'</span></div><div class="detail-row"><span>Amount</span><span style="color:var(--red)">-$'+fmt(amt)+'</span></div><div class="detail-row"><span>Balance After</span><span>$'+fmt(newBal)+'</span></div><div class="detail-row"><span>Date</span><span>'+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})+'</span></div>';
+    hide(q('billFormView'));show(q('billReceiptView'));
+    btn.disabled=false;btn.textContent='Pay Bill';
+    addNotification('Bill Paid','$'+fmt(amt)+' paid to '+provider+' ('+billCategory+')','green');
+  },1500);
 }
 
 /* === WEEKLY SPENDING ============================================= */
