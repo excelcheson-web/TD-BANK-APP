@@ -1155,6 +1155,47 @@ a { color: inherit; text-decoration: none; }
   padding-bottom: 104px;
 }
 
+/* ── Loading overlay (shown before menus/pages open) ──────── */
+.db-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: dbLoadFadeIn 0.2s ease;
+}
+@keyframes dbLoadFadeIn {
+  from { opacity: 0 }
+  to   { opacity: 1 }
+}
+.db-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.db-loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #00a63f;
+  border-radius: 50%;
+  animation: dbLoadSpin 0.8s linear infinite;
+}
+@keyframes dbLoadSpin {
+  to { transform: rotate(360deg) }
+}
+.db-loading-text {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
 /* ── Green header ───────────────────────────────────────────── */
 .db-header {
   position: sticky;

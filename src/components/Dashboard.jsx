@@ -217,8 +217,21 @@ export default function Dashboard({ user, onLogout }) {
   const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'dark')
   const [adToast, setAdToast] = useState(null)
   const [showLogoMenu, setShowLogoMenu] = useState(false)
+  const [overlayLoading, setOverlayLoading] = useState(false)
   const logoMenuRef = useRef(null)
   const wealthRef = useRef(null)
+  const loadingTimerRef = useRef(null)
+
+  /** Show a brief loading spinner, then execute the action */
+  const openWithLoading = useCallback((action) => {
+    if (overlayLoading) return
+    setOverlayLoading(true)
+    if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current)
+    loadingTimerRef.current = setTimeout(() => {
+      setOverlayLoading(false)
+      action()
+    }, 2000)
+  }, [overlayLoading])
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
@@ -379,6 +392,15 @@ export default function Dashboard({ user, onLogout }) {
 
   return (
     <div className={`db ${theme === 'light' ? 'db--light' : ''}`}>
+      {/* Loading overlay */}
+      {overlayLoading && (
+        <div className="db-loading-overlay">
+          <div className="db-loading-content">
+            <div className="db-loading-spinner" />
+            <span className="db-loading-text">Loading…</span>
+          </div>
+        </div>
+      )}
       {/* Email sent toast */}
       {emailToast && (
         <div className="email-toast" onClick={() => setEmailToast(null)}>
@@ -514,7 +536,7 @@ export default function Dashboard({ user, onLogout }) {
           </button>
           {showLogoMenu && (
             <div className="db-logo-menu">
-              <button className="db-logo-menu-item" onClick={() => { setShowLogoMenu(false); setShowAccountInfo(true) }}>
+              <button className="db-logo-menu-item" onClick={() => { setShowLogoMenu(false); openWithLoading(() => setShowAccountInfo(true)) }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Profile Settings
               </button>
@@ -522,7 +544,7 @@ export default function Dashboard({ user, onLogout }) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 Privacy
               </button>
-              <button className="db-logo-menu-item" onClick={() => { setShowLogoMenu(false); setShowBankCard(true) }}>
+              <button className="db-logo-menu-item" onClick={() => { setShowLogoMenu(false); openWithLoading(() => setShowBankCard(true)) }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 Security
               </button>
@@ -601,13 +623,13 @@ export default function Dashboard({ user, onLogout }) {
           {/* Quick action icons */}
           <div className="db-quick-row">
             {[
-              { icon: <InfoIcon />, label: 'Info', action: () => setShowAccountInfo(true) },
-              { icon: <TransferIcon />, label: 'Transfer', action: () => {
+              { icon: <InfoIcon />, label: 'Info', action: () => openWithLoading(() => setShowAccountInfo(true)) },
+              { icon: <TransferIcon />, label: 'Transfer', action: () => openWithLoading(() => {
                 if (admin.suspended) { setShowSuspend(true) } else { setShowLocalTransfer(true) }
-              }},
-              { icon: <DepositIcon />, label: 'Deposit', action: () => setShowDeposit(true) },
-              { icon: <CryptoIcon />, label: 'Crypto', action: () => setShowCrypto(true) },
-              { icon: <CardIcon />, label: 'Card', action: () => setShowBankCard(true) },
+              })},
+              { icon: <DepositIcon />, label: 'Deposit', action: () => openWithLoading(() => setShowDeposit(true)) },
+              { icon: <CryptoIcon />, label: 'Crypto', action: () => openWithLoading(() => setShowCrypto(true)) },
+              { icon: <CardIcon />, label: 'Card', action: () => openWithLoading(() => setShowBankCard(true)) },
             ].map((a) => (
               <button key={a.label} className="db-quick-btn" onClick={a.action}>
                 <div className="db-quick-icon">{a.icon}</div>
@@ -696,24 +718,24 @@ export default function Dashboard({ user, onLogout }) {
         <h2 className="db-section-title">Move Money</h2>
         <div className="db-move-grid">
           {[
-            { icon: <QuickPayIcon />, label: 'Quick Pay', desc: 'Instant transfer', action: () => {
+            { icon: <QuickPayIcon />, label: 'Quick Pay', desc: 'Instant transfer', action: () => openWithLoading(() => {
               if (admin.suspended) { setShowSuspend(true) } else { setShowLocalTransfer(true) }
-            }},
-            { icon: <WireIcon />, label: 'Wire Transfer', desc: 'International', action: () => {
+            })},
+            { icon: <WireIcon />, label: 'Wire Transfer', desc: 'International', action: () => openWithLoading(() => {
               if (admin.suspended) { setShowSuspend(true) } else { setShowIntlTransfer(true) }
-            }},
-            { icon: <ScheduleIcon />, label: 'Scheduled', desc: 'Set & forget', action: () => {
+            })},
+            { icon: <ScheduleIcon />, label: 'Scheduled', desc: 'Set & forget', action: () => openWithLoading(() => {
               if (admin.suspended) { setShowSuspend(true) } else { setShowScheduled(true) }
-            }},
-            { icon: <ExchangeIcon />, label: 'Global Exchange', desc: 'FX converter', action: () => {
+            })},
+            { icon: <ExchangeIcon />, label: 'Global Exchange', desc: 'FX converter', action: () => openWithLoading(() => {
               setExchangeUsd(''); setShowExchange(true)
-            }},
-            { icon: <BillPayIcon />, label: 'Bill Payment', desc: 'Pay your bills', action: () => {
+            })},
+            { icon: <BillPayIcon />, label: 'Bill Payment', desc: 'Pay your bills', action: () => openWithLoading(() => {
               if (admin.suspended) { setShowSuspend(true) } else { setShowBillPay(true) }
-            }},
-            { icon: <InvestIcon />, label: 'Invest', desc: 'Stocks & ETFs', action: () => {
+            })},
+            { icon: <InvestIcon />, label: 'Invest', desc: 'Stocks & ETFs', action: () => openWithLoading(() => {
               if (admin.suspended) { setShowSuspend(true) } else { setShowInvestment(true) }
-            }},
+            })},
           ].map((m) => (
             <button key={m.label} className="db-move-tile" onClick={m.action}>
               <div className="db-move-icon">{m.icon}</div>
@@ -800,7 +822,7 @@ export default function Dashboard({ user, onLogout }) {
             <div className="db-statements-empty"><p>No transactions yet.</p></div>
           )
         })()}
-        <button className="db-view-all-btn" onClick={() => setShowTxnHistory(true)}>
+        <button className="db-view-all-btn" onClick={() => openWithLoading(() => setShowTxnHistory(true))}>
           <span>View All Transactions & Statements</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
@@ -962,13 +984,13 @@ export default function Dashboard({ user, onLogout }) {
               if (n.id === 'home') {
                 window.scrollTo({ top: 0, behavior: 'smooth' })
               } else if (n.id === 'cards') {
-                setShowBankCard(true)
+                openWithLoading(() => setShowBankCard(true))
               } else if (n.id === 'services') {
-                setShowFinServices(true)
+                openWithLoading(() => setShowFinServices(true))
               } else if (n.id === 'notifications') {
-                setShowNotifCenter(true)
+                openWithLoading(() => setShowNotifCenter(true))
               } else if (n.id === 'support') {
-                setShowAiSupport(true)
+                openWithLoading(() => setShowAiSupport(true))
               }
             }}
           >
