@@ -26,28 +26,55 @@ export function getLastCode() {
 
 /**
  * Send an OTP email via EmailJS (frontend-only).
- * Uses .then()/.catch() — no server endpoints.
+ *
+ * Supports two calling patterns:
+ *   1. sendOtp(email, variant)        — async, returns { code, demo }  (used by OtpModal)
+ *   2. sendOtp(onSuccess, onError)    — callback style                 (used by transfers)
  */
-export function sendOtp(onSuccess, onError) {
+export function sendOtp(firstArg, secondArg) {
   const code = generateOtp()
 
+  // Detect calling pattern: if firstArg looks like an email string, use async style
+  const isAsyncStyle = typeof firstArg === 'string'
+
+  const recipientEmail = isAsyncStyle
+    ? firstArg
+    : localStorage.getItem('user_email')
+
+  const recipientName = localStorage.getItem('user_name') || ''
+
   const templateParams = {
-    to_email: localStorage.getItem('user_email'),
+    to_email: recipientEmail,
     otp_code: code,
-    user_name: localStorage.getItem('user_name')
+    user_name: recipientName
   }
 
-  emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY)
-    .then((response) => {
-      console.log('SUCCESS!', response.status, response.text)
-      if (onSuccess) onSuccess(code)
-    })
-    .catch((err) => {
-      console.error('EmailJS Error:', err)
-      if (onError) onError(err)
-    })
+  if (isAsyncStyle) {
+    // Async pattern for OtpModal: sendOtp(email, variant) → { code, demo }
+    return emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY)
+      .then(() => ({ code, demo: false }))
+      .catch((err) => {
+        console.error('EmailJS Error:', err)
+        // Return code in demo mode so the user can still proceed
+        return { code, demo: true }
+      })
+  } else {
+    // Callback pattern for transfers: sendOtp(onSuccess, onError)
+    const onSuccess = firstArg
+    const onError = secondArg
 
-  return code
+    emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY)
+      .then((response) => {
+        console.log('SUCCESS!', response.status, response.text)
+        if (onSuccess) onSuccess(code)
+      })
+      .catch((err) => {
+        console.error('EmailJS Error:', err)
+        if (onError) onError(err)
+      })
+
+    return code
+  }
 }
 
 export function verifyOtp(input) {
