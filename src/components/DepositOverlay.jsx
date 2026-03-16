@@ -46,7 +46,11 @@ export default function DepositOverlay({ balance, onClose, onBalanceUpdate }) {
 
     setTimeout(() => {
       setLoadingMsg('Processing funds…')
-    }, 1200)
+    }, 2000)
+
+    setTimeout(() => {
+      setLoadingMsg('Crediting your account…')
+    }, 3800)
 
     setTimeout(() => {
       const newBalance = balance + amt
@@ -74,7 +78,7 @@ export default function DepositOverlay({ balance, onClose, onBalanceUpdate }) {
 
       setIsLoading(false)
       setReceipt({ ref, amount: amt, newBalance })
-    }, 2800)
+    }, 5000)
   }
 
   // Loading

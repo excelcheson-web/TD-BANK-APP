@@ -154,7 +154,7 @@ export default function FinancialServices({ onClose, onBalanceUpdate }) {
       if (onBalanceUpdate) onBalanceUpdate(newBal)
       setLoanProcessing(false)
       setLoanSuccess(loan)
-    }, 2000)
+    }, 5000)
   }
 
   function handleInvest(manager, type) {
@@ -193,7 +193,7 @@ export default function FinancialServices({ onClose, onBalanceUpdate }) {
       if (onBalanceUpdate) onBalanceUpdate(newBal)
       setInvestProcessing(false)
       setInvestSuccess(inv)
-    }, 2000)
+    }, 5000)
   }
 
   function handleMmInvest() {
@@ -232,7 +232,7 @@ export default function FinancialServices({ onClose, onBalanceUpdate }) {
       if (onBalanceUpdate) onBalanceUpdate(newBal)
       setMmProcessing(false)
       setMmSuccess(inv)
-    }, 2000)
+    }, 5000)
   }
 
   function resetState() {

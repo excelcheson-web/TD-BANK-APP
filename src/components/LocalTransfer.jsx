@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { generateTransferPDF } from '../services/pdfReceipt'
 import { sendTransferEmail } from '../services/emailNotification'
+import { sendOtp, verifyOtp } from '../services/otpService'
 
 const HISTORY_KEY = 'transfer_history'
 
@@ -15,10 +16,8 @@ function formatCurrency(n) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function generateOTP() {
-  const code = String(Math.floor(100000 + Math.random() * 900000))
-  console.log('%c[TD Bank] Your 6-digit confirmation code: ' + code, 'color:#4cff88;font-size:14px;font-weight:bold;background:#0a1a0a;padding:8px 12px;border-radius:6px;')
-  return code
+function getUserEmail() {
+  try { return JSON.parse(localStorage.getItem('securebank_user') || '{}').email || '' } catch { return '' }
 }
 
 const CloseIcon = () => (
@@ -99,12 +98,6 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
       return
     }
 
-    // Generate OTP and show security modal
-    const code = generateOTP()
-    setOtpRef(code)
-    setOtpCode(['', '', '', '', '', ''])
-    setOtpError('')
-
     // Build pending txn
     const newBalance = balance - amt
     const ref = genRef()
@@ -120,13 +113,23 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
       date: new Date().toISOString(),
     })
 
-    // Show loading → then OTP modal
+    // Send OTP to registered email → then show OTP modal
+    setOtpCode(['', '', '', '', '', ''])
+    setOtpError('')
     setIsLoading(true)
     setLoadingMsg('Verifying with server…')
-    setTimeout(() => {
+
+    const email = getUserEmail()
+    sendOtp(email, 'transfer').then((res) => {
+      if (res.demo) {
+        setOtpRef(res.code)
+        console.log('%c[TD Bank] Demo mode – OTP: ' + res.code, 'color:#4cff88;font-size:14px;font-weight:bold;background:#0a1a0a;padding:8px 12px;border-radius:6px;')
+      } else {
+        setOtpRef('')
+      }
       setIsLoading(false)
       setOtpStep(true)
-    }, 2500)
+    })
   }
 
   const handleOtpVerify = () => {
@@ -135,8 +138,13 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
       setOtpError('Please enter all 6 digits.')
       return
     }
-    if (entered !== otpRef) {
+
+    // Verify against service (or demo ref)
+    const valid = otpRef ? entered === otpRef : verifyOtp(entered)
+    if (!valid) {
       setOtpError('Invalid code. Please try again.')
+      setOtpCode(['', '', '', '', '', ''])
+      setTimeout(() => otpRefs.current[0]?.focus(), 100)
       return
     }
 
@@ -144,6 +152,7 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
     setOtpStep(false)
     setIsLoading(true)
     setLoadingMsg('Processing transfer…')
+    setTimeout(() => setLoadingMsg('Confirming with bank server…'), 2200)
 
     setTimeout(() => {
       const txn = pendingTxn
@@ -163,7 +172,7 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
 
       setIsLoading(false)
       setReceipt(txn)
-    }, 2800)
+    }, 5000)
   }
 
   // ── Loading view ──

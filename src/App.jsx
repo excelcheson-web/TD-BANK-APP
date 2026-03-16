@@ -19,7 +19,7 @@ export default function App() {
 
   // Show vault splash on first load
   useEffect(() => {
-    const t = setTimeout(() => setBooting(false), 2000)
+    const t = setTimeout(() => setBooting(false), 5000)
     return () => clearTimeout(t)
   }, [])
 

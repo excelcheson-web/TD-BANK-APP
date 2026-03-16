@@ -114,7 +114,7 @@ export default function TransactionHistory({ onClose }) {
       setStmtSending(false)
       setStmtRequested(true)
       setTimeout(() => setStmtRequested(false), 4000)
-    }, 1500)
+    }, 5000)
   }
 
   // ── Transactions Tab ──

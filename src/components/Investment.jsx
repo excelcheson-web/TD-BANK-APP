@@ -57,6 +57,8 @@ export default function Investment({ balance, onClose, onBalanceUpdate }) {
   const [error, setError] = useState('')
   const [receipt, setReceipt] = useState(null)
   const [portfolio, setPortfolio] = useState(getPortfolio)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadingMsg, setLoadingMsg] = useState('')
 
   const allAssets = tab === 'stocks' ? STOCKS : ETFS
 
@@ -92,6 +94,12 @@ export default function Investment({ balance, onClose, onBalanceUpdate }) {
       date: new Date().toISOString(),
     }
 
+    setIsLoading(true)
+    setLoadingMsg('Placing order on market…')
+    setTimeout(() => setLoadingMsg('Executing trade…'), 2000)
+    setTimeout(() => setLoadingMsg('Confirming with exchange…'), 3800)
+
+    setTimeout(() => {
     // Save to transfer history
     const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
     history.unshift(txn)
@@ -121,14 +129,33 @@ export default function Investment({ balance, onClose, onBalanceUpdate }) {
     window.dispatchEvent(new StorageEvent('storage', { key: 'securebank_notifications', newValue: JSON.stringify(notifs) }))
 
     sendTransferEmail(txn)
+    setIsLoading(false)
     setReceipt({ ...txn, ticker: selected.ticker, shares: qty, pricePerShare: selected.price })
     setView('receipt')
+    }, 5000)
   }
 
   const totalPortValue = portfolio.reduce((sum, p) => {
     const current = [...STOCKS, ...ETFS].find((s) => s.ticker === p.ticker)
     return sum + (current ? current.price * p.shares : p.avgCost * p.shares)
   }, 0)
+
+  // ── Loading ──
+  if (isLoading) {
+    return (
+      <div className="tf-overlay">
+        <div className="tf-sheet">
+          <div className="tf-loading-sheet">
+            <div className="server-spinner" />
+            <div className="server-progress">
+              <div className="server-progress-bar"><div className="server-progress-fill" /></div>
+              <p className="server-progress-msg">{loadingMsg}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // ── Receipt ──
   if (view === 'receipt' && receipt) {

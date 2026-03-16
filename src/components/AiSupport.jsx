@@ -82,7 +82,7 @@ export default function AiSupport({ onClose }) {
       const reply = getBotReply(text)
       setMessages((prev) => [...prev, { id: Date.now() + 1, from: 'bot', text: reply, time: new Date() }])
       setTyping(false)
-    }, 800 + Math.random() * 600)
+    }, 5000)
   }
 
   function handleSubmit(e) {

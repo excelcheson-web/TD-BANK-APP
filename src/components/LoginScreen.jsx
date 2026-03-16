@@ -82,12 +82,13 @@ export default function LoginScreen({ onLogin, onRegister }) {
 
     setLoading(true)
     setLoadingMsg('Verifying credentials…')
-    setTimeout(() => setLoadingMsg('Authenticating with server…'), 1200)
+    setTimeout(() => setLoadingMsg('Authenticating with server…'), 2000)
+    setTimeout(() => setLoadingMsg('Establishing secure session…'), 3800)
     setTimeout(() => {
       setLoading(false)
       setLoadingMsg('')
       onLogin(stored)
-    }, 2800)
+    }, 5000)
   }
 
   /* ── Face ID Handler ─────────────────────────────────── */
@@ -103,9 +104,9 @@ export default function LoginScreen({ onLogin, onRegister }) {
         setTimeout(() => onLogin(stored), 600)
       } else {
         setFaceIdState('denied')
-        setTimeout(() => setFaceIdState('idle'), 2500)
+        setTimeout(() => setFaceIdState('idle'), 3000)
       }
-    }, 2000)
+    }, 5000)
   }
 
   /* ── Forgot Password Handler ─────────────────────────── */
@@ -142,7 +143,7 @@ export default function LoginScreen({ onLogin, onRegister }) {
       setForgotStep('email')
       setForgotEmail('')
       setNewPin('')
-    }, 2500)
+    }, 5000)
   }
 
   const openForgot = (e) => {

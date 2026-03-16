@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { generateTransferPDF } from '../services/pdfReceipt'
 import { sendTransferEmail } from '../services/emailNotification'
+import { sendOtp, verifyOtp } from '../services/otpService'
 
 const HISTORY_KEY = 'transfer_history'
 
@@ -15,10 +16,8 @@ function formatCurrency(n) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function generateOTP() {
-  const code = String(Math.floor(100000 + Math.random() * 900000))
-  console.log('%c[TD Bank] Your 6-digit confirmation code: ' + code, 'color:#4cff88;font-size:14px;font-weight:bold;background:#0a1a0a;padding:8px 12px;border-radius:6px;')
-  return code
+function getUserEmail() {
+  try { return JSON.parse(localStorage.getItem('securebank_user') || '{}').email || '' } catch { return '' }
 }
 
 const CloseIcon = () => (
@@ -124,18 +123,23 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
     setLoadingMsg('Connecting to SWIFT network…')
 
     setTimeout(() => {
-      // Step 2: Server verification
+      // Step 2: Send OTP to registered email
       setLoadingMsg('Verifying with server…')
-      const code = generateOTP()
-      setOtpRef(code)
       setOtpCode(['', '', '', '', '', ''])
       setOtpError('')
 
-      setTimeout(() => {
+      const email = getUserEmail()
+      sendOtp(email, 'transfer').then((res) => {
+        if (res.demo) {
+          setOtpRef(res.code)
+          console.log('%c[TD Bank] Demo mode – OTP: ' + res.code, 'color:#4cff88;font-size:14px;font-weight:bold;background:#0a1a0a;padding:8px 12px;border-radius:6px;')
+        } else {
+          setOtpRef('')
+        }
         setIsLoading(false)
         setOtpStep(true)
-      }, 1500)
-    }, 2000)
+      })
+    }, 3000)
   }
 
   const handleOtpVerify = () => {
@@ -144,8 +148,13 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
       setOtpError('Please enter all 6 digits.')
       return
     }
-    if (entered !== otpRef) {
+
+    // Verify against service (or demo ref)
+    const valid = otpRef ? entered === otpRef : verifyOtp(entered)
+    if (!valid) {
       setOtpError('Invalid code. Please try again.')
+      setOtpCode(['', '', '', '', '', ''])
+      setTimeout(() => otpRefs.current[0]?.focus(), 100)
       return
     }
 
@@ -153,6 +162,7 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
     setOtpStep(false)
     setIsLoading(true)
     setLoadingMsg('Processing international transfer…')
+    setTimeout(() => setLoadingMsg('Routing through SWIFT gateway…'), 2200)
 
     setTimeout(() => {
       const txn = pendingTxn
@@ -170,7 +180,7 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
 
       setIsLoading(false)
       setReceipt(txn)
-    }, 3000)
+    }, 5000)
   }
 
   // ── Loading view ──

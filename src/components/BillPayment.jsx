@@ -51,6 +51,8 @@ export default function BillPayment({ balance, onClose, onBalanceUpdate }) {
   const [form, setForm] = useState({ accountNo: '', amount: '', memo: '' })
   const [error, setError] = useState('')
   const [receipt, setReceipt] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadingMsg, setLoadingMsg] = useState('')
 
   const update = (field, value) => {
     setForm((p) => ({ ...p, [field]: value }))
@@ -76,6 +78,13 @@ export default function BillPayment({ balance, onClose, onBalanceUpdate }) {
     const amt = parseFloat(form.amount.replace(/,/g, ''))
     const newBalance = balance - amt
     const ref = genRef()
+
+    setIsLoading(true)
+    setLoadingMsg('Processing bill payment…')
+    setTimeout(() => setLoadingMsg('Verifying with biller…'), 2000)
+    setTimeout(() => setLoadingMsg('Finalizing payment…'), 3800)
+
+    setTimeout(() => {
     const txn = {
       id: Date.now(),
       ref,
@@ -108,11 +117,30 @@ export default function BillPayment({ balance, onClose, onBalanceUpdate }) {
     window.dispatchEvent(new StorageEvent('storage', { key: 'securebank_notifications', newValue: JSON.stringify(notifs) }))
 
     sendTransferEmail(txn)
+    setIsLoading(false)
     setReceipt(txn)
     setStep('receipt')
+    }, 5000)
   }
 
   const amt = parseFloat((form.amount || '0').replace(/,/g, '')) || 0
+
+  // ── Loading view ──
+  if (isLoading) {
+    return (
+      <div className="tf-overlay">
+        <div className="tf-sheet">
+          <div className="tf-loading-sheet">
+            <div className="server-spinner" />
+            <div className="server-progress">
+              <div className="server-progress-bar"><div className="server-progress-fill" /></div>
+              <p className="server-progress-msg">{loadingMsg}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // ── Receipt view ──
   if (step === 'receipt' && receipt) {

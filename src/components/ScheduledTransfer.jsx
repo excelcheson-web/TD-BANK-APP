@@ -57,6 +57,8 @@ export default function ScheduledTransfer({ balance, onClose, onBalanceUpdate })
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadingMsg, setLoadingMsg] = useState('')
 
   // Process any due transfers on mount
   useEffect(() => {
@@ -150,11 +152,19 @@ export default function ScheduledTransfer({ balance, onClose, onBalanceUpdate })
       createdAt: new Date().toISOString(),
     }
 
-    const updated = [item, ...scheduled]
-    localStorage.setItem(SCHEDULED_KEY, JSON.stringify(updated))
-    setScheduled(updated)
-    setSuccess(ref)
-    setForm({ beneficiary: '', accountNumber: '', bankName: '', amount: '', date: '', frequency: 'once' })
+    setIsLoading(true)
+    setLoadingMsg('Scheduling transfer…')
+    setTimeout(() => setLoadingMsg('Registering with server…'), 2000)
+    setTimeout(() => setLoadingMsg('Confirming schedule…'), 3800)
+
+    setTimeout(() => {
+      const updated = [item, ...scheduled]
+      localStorage.setItem(SCHEDULED_KEY, JSON.stringify(updated))
+      setScheduled(updated)
+      setIsLoading(false)
+      setSuccess(ref)
+      setForm({ beneficiary: '', accountNumber: '', bankName: '', amount: '', date: '', frequency: 'once' })
+    }, 5000)
   }
 
   const handleCancel = (id) => {
@@ -165,6 +175,23 @@ export default function ScheduledTransfer({ balance, onClose, onBalanceUpdate })
 
   const pendingItems = scheduled.filter((s) => s.status === 'pending')
   const pastItems = scheduled.filter((s) => s.status !== 'pending')
+
+  // ── Loading view ──
+  if (isLoading) {
+    return (
+      <div className="tf-overlay">
+        <div className="tf-sheet">
+          <div className="tf-loading-sheet">
+            <div className="server-spinner" />
+            <div className="server-progress">
+              <div className="server-progress-bar"><div className="server-progress-fill" /></div>
+              <p className="server-progress-msg">{loadingMsg}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // ── Success confirmation ──
   if (success) {
