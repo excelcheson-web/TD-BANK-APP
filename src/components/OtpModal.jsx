@@ -18,11 +18,13 @@ export default function OtpModal({ email, onVerified, onCancel, variant = 'onboa
   const [demoCode, setDemoCode] = useState('')
   const refs = useRef([])
 
-  // Send OTP on mount
+  // Send OTP on mount (use email as dependency so it fires once email is available)
   useEffect(() => {
-    doSend()
+    if (email) {
+      doSend(email)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [email])
 
   // Countdown timer for resend
   useEffect(() => {
@@ -31,11 +33,18 @@ export default function OtpModal({ email, onVerified, onCancel, variant = 'onboa
     return () => clearInterval(t)
   }, [resendTimer])
 
-  async function doSend() {
+  async function doSend(recipientEmail) {
+    const target = recipientEmail || email
+    console.log('OtpModal doSend → email prop:', target)
+    if (!target) {
+      setError('No email address provided.')
+      setSending(false)
+      return
+    }
     setSending(true)
     setError('')
     setOtp(['', '', '', '', '', ''])
-    const result = await sendOtp(email, variant)
+    const result = await sendOtp(target, variant)
     setSending(false)
     setResendTimer(30)
     // Only reveal code in demo/fallback mode (API unreachable)
