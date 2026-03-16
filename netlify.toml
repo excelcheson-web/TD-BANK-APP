@@ -8,3 +8,23 @@
   targetPort = 5173
   port = 8888
   autoLaunch = false
+
+[[redirects]]
+  from = "/admin-portal-99.html"
+  to = "/admin-portal-99.html"
+  status = 200
+
+[[redirects]]
+  from = "/system-control-vault-77.html"
+  to = "/system-control-vault-77.html"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

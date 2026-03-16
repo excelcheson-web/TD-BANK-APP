@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -158,7 +158,6 @@ export default function AdminApp() {
 
   // Profile picture
   const [profilePic, setProfilePic] = useState('')
-  const fileInputRef = useRef(null)
 
   // System alert
   const [alertMsg, setAlertMsg] = useState('')
@@ -535,11 +534,12 @@ export default function AdminApp() {
                   : <span className="adm-pic-placeholder">👤</span>}
               </div>
               <div className="adm-pic-actions">
-                <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
-                  onChange={handlePicUpload} />
-                <button className="adm-pic-btn" onClick={() => fileInputRef.current?.click()}>
+                <label className="adm-pic-btn" style={{ display: 'inline-block', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                   📷 Upload New Photo
-                </button>
+                  <input type="file" accept="image/*"
+                    style={{ position: 'absolute', width: 0, height: 0, opacity: 0, overflow: 'hidden', pointerEvents: 'none' }}
+                    onChange={handlePicUpload} />
+                </label>
                 {profilePic && (
                   <button className="adm-pic-btn adm-pic-btn--danger" onClick={removePic}>
                     🗑 Remove Photo
