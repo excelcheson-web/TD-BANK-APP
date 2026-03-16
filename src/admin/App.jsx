@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { auth, updateUserProfile } from '../services/firebase'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -382,6 +383,9 @@ export default function AdminApp() {
       const user = getUser() || {}
       user.profilePic = dataUrl
       saveUser(user)
+      // Push to Firestore for cross-device sync
+      const uid = auth.currentUser?.uid
+      if (uid) updateUserProfile(uid, { profilePic: dataUrl }).catch(() => {})
       showStatus('success', 'Profile picture updated.')
     }
     reader.readAsDataURL(file)
@@ -392,6 +396,9 @@ export default function AdminApp() {
     const user = getUser() || {}
     user.profilePic = ''
     saveUser(user)
+    // Push to Firestore for cross-device sync
+    const uid = auth.currentUser?.uid
+    if (uid) updateUserProfile(uid, { profilePic: '' }).catch(() => {})
     showStatus('success', 'Profile picture removed.')
   }
 
@@ -534,10 +541,10 @@ export default function AdminApp() {
                   : <span className="adm-pic-placeholder">👤</span>}
               </div>
               <div className="adm-pic-actions">
-                <label className="adm-pic-btn" style={{ display: 'inline-block', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                <label className="adm-pic-btn" style={{ display: 'inline-block', textAlign: 'center', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}>
                   📷 Upload New Photo
                   <input type="file" accept="image/*"
-                    style={{ position: 'absolute', width: 0, height: 0, opacity: 0, overflow: 'hidden', pointerEvents: 'none' }}
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
                     onChange={handlePicUpload} />
                 </label>
                 {profilePic && (
