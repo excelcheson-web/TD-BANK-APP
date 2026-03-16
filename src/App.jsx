@@ -32,8 +32,9 @@ export default function App() {
       <OnboardingFlow
         onComplete={(data) => {
           setRegistering(false)
-          const u = { email: data.email, name: data.fullName, accountNumber: data.accountNumber, profilePic: data.profilePic || '', pin: data.pin }
+          const u = { email: data.email, name: data.fullName, accountNumber: data.accountNumber, profilePic: data.profilePic || '', pin: data.pin, accountType: data.accountType }
           localStorage.setItem('securebank_user', JSON.stringify(u))
+          localStorage.setItem('user_account_type', data.accountType)
           setUser(u)
         }}
       />

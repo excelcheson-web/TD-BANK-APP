@@ -23,7 +23,7 @@ export default function AccountInfo({ user, balance, onClose }) {
   const email = user?.email || '—'
   const accountNumber = user?.accountNumber || '—'
   const routingNumber = '031101266'
-  const accountType = 'TD Convenience Checking'
+  const accountType = user?.accountType || localStorage.getItem('user_account_type') || 'Savings Account'
   const bankName = 'TD Bank, N.A.'
   const swiftCode = 'TDOMUS33'
 

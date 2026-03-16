@@ -445,6 +445,10 @@ export default function Dashboard({ user, onLogout }) {
           <div>
             <h1 className="db-header-title">{user?.name || 'User'}</h1>
             {accountNumber && <span className="db-header-acct">{maskedAcct}</span>}
+            {/* Account Type display */}
+            <div className="db-header-type" style={{ fontSize: '1.05rem', color: '#2d6a2e', fontWeight: 600, marginTop: 2 }}>
+              {(user?.accountType || localStorage.getItem('user_account_type') || 'Savings Account')}
+            </div>
           </div>
         </div>
         <div className="db-header-actions">

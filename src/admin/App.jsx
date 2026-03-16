@@ -459,6 +459,29 @@ export default function AdminApp() {
               placeholder="e.g. 1,490,000.00" value={form.balance}
               onChange={(e) => update('balance', e.target.value)} />
 
+            {/* Account Type Dropdown */}
+            <label className="admin-label" htmlFor="accountType">Account Type</label>
+            <select
+              id="accountType"
+              className="admin-input"
+              value={form.accountType || 'Savings Account'}
+              onChange={e => {
+                update('accountType', e.target.value);
+                localStorage.setItem('user_account_type', e.target.value);
+                // Also update user object if exists
+                try {
+                  const user = JSON.parse(localStorage.getItem('securebank_user') || '{}');
+                  user.accountType = e.target.value;
+                  localStorage.setItem('securebank_user', JSON.stringify(user));
+                } catch {}
+              }}
+            >
+              <option>Savings Account</option>
+              <option>Checking Account</option>
+              <option>Current Account</option>
+              <option>Fixed Deposit</option>
+            </select>
+
             <label className="admin-label" htmlFor="lastTxn">Last Transaction Amount ($)</label>
             <input id="lastTxn" className="admin-input" type="text" inputMode="decimal"
               placeholder="e.g. 5,000.00" value={form.lastTxnAmount}
