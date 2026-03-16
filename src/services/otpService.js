@@ -49,6 +49,8 @@ export function sendOtp(firstArg, secondArg) {
     user_name: recipientName
   }
 
+  console.log('OTP sendOtp called → to_email:', recipientEmail, '| isAsyncStyle:', isAsyncStyle)
+
   if (isAsyncStyle) {
     // Async pattern for OtpModal: sendOtp(email, variant) → { code, demo }
     return emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY)
