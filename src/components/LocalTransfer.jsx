@@ -53,6 +53,7 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', ''])
   const [otpError, setOtpError] = useState('')
   const [otpRef, setOtpRef] = useState('')
+  const [otpConfirmMsg, setOtpConfirmMsg] = useState('')
   const [pendingTxn, setPendingTxn] = useState(null)
   const otpRefs = useRef([])
 
@@ -121,12 +122,9 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
 
     const email = getUserEmail()
     sendOtp(email, 'transfer').then((res) => {
-      if (res.demo) {
-        setOtpRef(res.code)
-        console.log('%c[TD Bank] Demo mode – OTP: ' + res.code, 'color:#4cff88;font-size:14px;font-weight:bold;background:#0a1a0a;padding:8px 12px;border-radius:6px;')
-      } else {
-        setOtpRef('')
-      }
+      const sentTo = res.email || email
+      setOtpRef(res.code || '')
+      setOtpConfirmMsg(`A secure code has been sent to ${sentTo}. Please check your inbox to confirm the transfer.`)
       setIsLoading(false)
       setOtpStep(true)
     })
@@ -198,7 +196,7 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
           <div className="otp-security-icon"><ShieldIcon /></div>
           <h2 className="otp-security-title">Security Verification</h2>
           <p className="otp-security-desc">
-            A 6-digit confirmation code has been sent to your registered email.
+            {otpConfirmMsg || 'A 6-digit confirmation code has been sent to your registered email.'}
           </p>
           <div className="otp-security-row">
             {otpCode.map((d, i) => (

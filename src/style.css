@@ -3749,6 +3749,8 @@ a { color: inherit; text-decoration: none; }
   gap: 10px;
 }
 .bc-card-logo {
+  width: 44px;
+  height: auto;
   filter: brightness(0) invert(1);
   opacity: 0.90;
 }
@@ -3784,7 +3786,8 @@ a { color: inherit; text-decoration: none; }
   font-size: 1.25rem;
   font-weight: 600;
   color: rgba(255,255,255,0.92);
-  letter-spacing: 0.22em;
+  letter-spacing: 2px;
+  font-family: 'Courier New', Courier, monospace;
   margin: 6px 0 4px;
   text-shadow: 0 1px 3px rgba(0,0,0,0.35);
   position: relative;

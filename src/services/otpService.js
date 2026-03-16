@@ -1,10 +1,13 @@
 /**
- * OTP Service – generates a 6-digit code and sends it via Resend
- * through a Netlify serverless function at /api/send-otp.
- *
- * Falls back to demo mode: shows a browser Notification + fires a
- * custom 'otp-toast' event so the UI can display a toast with the code.
+ * OTP Service – generates a 6-digit code and sends it via EmailJS.
+ * Also fires a browser Notification + custom 'otp-toast' event for UI feedback.
  */
+
+import emailjs from '@emailjs/browser'
+
+const SERVICE_ID  = 'iHrU0CHXmi5SXfRJ7E46A'
+const TEMPLATE_ID = 'template_pxc66y7'
+const PUBLIC_KEY  = 'kLiAq79ZBAjG8epzA'
 
 let _lastCode = ''
 
@@ -45,37 +48,27 @@ function notifyOtp(code, email) {
 }
 
 /**
- * Send an OTP to the given email via the serverless endpoint.
- * @param {string} email – recipient address
+ * Send an OTP to the given email via EmailJS.
+ * @param {string} [emailOverride] – optional email; falls back to localStorage 'user_email'
  * @param {'onboarding'|'transfer'} [type='onboarding'] – email template variant
- * @returns {Promise<{ success: boolean, code?: string, demo?: boolean }>}
+ * @returns {Promise<{ success: boolean, code?: string, email?: string }>}
  */
-export async function sendOtp(email, type = 'onboarding') {
+export async function sendOtp(emailOverride, type = 'onboarding') {
+  const email = emailOverride || localStorage.getItem('user_email') || ''
   const code = generateOtp()
 
   try {
-    const res = await fetch('/api/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code, type }),
-    })
-
-    if (res.ok) {
-      // Email sent successfully — don't expose code to client
-      return { success: true }
-    }
-
-    // API returned an error — fall through to demo mode
-    const err = await res.json().catch(() => ({}))
-    console.warn('OTP API error, falling back to demo mode:', err.error || res.status)
-  } catch {
-    // Network error (local dev, no Netlify Functions) — demo mode
-    console.warn('OTP API unreachable, using demo mode')
+    await emailjs.send(SERVICE_ID, TEMPLATE_ID, { otp_code: code }, PUBLIC_KEY)
+    // EmailJS delivered successfully
+    notifyOtp(code, email)
+    return { success: true, code, email }
+  } catch (err) {
+    console.warn('EmailJS send failed, falling back to demo mode:', err)
   }
 
-  // Demo fallback: show notification/toast with the code
+  // Fallback: still show the OTP in toast/notification for demo
   notifyOtp(code, email)
-  return { success: true, code, demo: true }
+  return { success: true, code, email, demo: true }
 }
 
 export function verifyOtp(input) {
