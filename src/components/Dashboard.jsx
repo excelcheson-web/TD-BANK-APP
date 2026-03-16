@@ -212,8 +212,11 @@ export default function Dashboard({ user, onLogout }) {
   const [sysAlert, setSysAlert] = useState(null)
   const [showNotifCenter, setShowNotifCenter] = useState(false)
   const [emailToast, setEmailToast] = useState(null)
+  const [otpToast, setOtpToast] = useState(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'dark')
   const [adToast, setAdToast] = useState(null)
+  const [showLogoMenu, setShowLogoMenu] = useState(false)
+  const logoMenuRef = useRef(null)
   const wealthRef = useRef(null)
 
   const toggleTheme = () => {
@@ -288,6 +291,16 @@ export default function Dashboard({ user, onLogout }) {
 
   useEffect(() => { checkSysAlert() }, [checkSysAlert])
 
+  // Close logo menu on outside click
+  useEffect(() => {
+    if (!showLogoMenu) return
+    const handler = (e) => {
+      if (logoMenuRef.current && !logoMenuRef.current.contains(e.target)) setShowLogoMenu(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showLogoMenu])
+
   const dismissSysAlert = () => {
     if (sysAlert) localStorage.setItem('system_notification_dismissed', String(sysAlert.id))
     setSysAlert(null)
@@ -314,6 +327,16 @@ export default function Dashboard({ user, onLogout }) {
     }
     window.addEventListener('email-sent', onEmail)
     return () => window.removeEventListener('email-sent', onEmail)
+  }, [])
+
+  // OTP toast listener
+  useEffect(() => {
+    const onOtp = (e) => {
+      setOtpToast(e.detail)
+      setTimeout(() => setOtpToast(null), 8000)
+    }
+    window.addEventListener('otp-toast', onOtp)
+    return () => window.removeEventListener('otp-toast', onOtp)
   }, [])
 
   useEffect(() => {
@@ -355,6 +378,17 @@ export default function Dashboard({ user, onLogout }) {
           <div className="email-toast-body">
             <strong>Email Confirmation Sent</strong>
             <span>{emailToast.to}</span>
+          </div>
+        </div>
+      )}
+      {/* OTP Toast */}
+      {otpToast && (
+        <div className="otp-toast" onClick={() => setOtpToast(null)}>
+          <span className="otp-toast-icon">🔐</span>
+          <div className="otp-toast-body">
+            <strong>[Internal System]</strong>
+            <span>{otpToast.message}</span>
+            <span className="otp-toast-email">Sent to {otpToast.email}</span>
           </div>
         </div>
       )}
@@ -466,9 +500,32 @@ export default function Dashboard({ user, onLogout }) {
 
       {/* ── Professional Nav Bar ────────────────────────── */}
       <header className="db-header">
-        {/* Left: Logo */}
-        <div className="db-header-logo">
-          <TDLogo size={32} className="td-logo-sm" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+        {/* Left: Logo with context menu */}
+        <div className="db-header-logo" ref={logoMenuRef}>
+          <button className="db-logo-btn" onClick={() => setShowLogoMenu((p) => !p)}>
+            <TDLogo size={32} className="td-logo-sm" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+          </button>
+          {showLogoMenu && (
+            <div className="db-logo-menu">
+              <button className="db-logo-menu-item" onClick={() => { setShowLogoMenu(false); setShowAccountInfo(true) }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Profile Settings
+              </button>
+              <button className="db-logo-menu-item" onClick={() => { setShowLogoMenu(false); setBalanceHidden((h) => { const next = !h; localStorage.setItem('privacy_state', next ? 'hidden' : 'visible'); return next }) }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Privacy
+              </button>
+              <button className="db-logo-menu-item" onClick={() => { setShowLogoMenu(false); setShowBankCard(true) }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Security
+              </button>
+              <div className="db-logo-menu-divider" />
+              <button className="db-logo-menu-item db-logo-menu-item--logout" onClick={() => { setShowLogoMenu(false); localStorage.removeItem('securebank_user'); localStorage.removeItem('user_account_type'); localStorage.removeItem('privacy_state'); onLogout() }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Logout
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right: Profile group + theme toggle */}

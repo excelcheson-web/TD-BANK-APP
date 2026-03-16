@@ -104,15 +104,9 @@ export default function BankCard({ user, onClose }) {
           <div className="bc-card-texture" />
           {/* Frozen watermark */}
           {frozen && <div className="bc-frozen-watermark">FROZEN</div>}
-          {/* Top row */}
+          {/* Top row: logo left, contactless right */}
           <div className="bc-card-top">
-            <div className="bc-card-bank">
-              <TDLogo size={38} className="bc-card-logo" />
-              <div className="bc-card-bank-text">
-                <span className="bc-card-bank-name">TD Bank</span>
-                <span className="bc-card-bank-type">VISA DEBIT</span>
-              </div>
-            </div>
+            <TDLogo size={22} className="bc-card-logo" />
             <ContactlessIcon />
           </div>
           {/* Chip */}
@@ -127,18 +121,22 @@ export default function BankCard({ user, onClose }) {
               <span className="bc-card-label">CARD HOLDER</span>
               <span className="bc-card-name">{name}</span>
             </div>
-            <div>
+            <div className="bc-card-valid-col">
               <span className="bc-card-label">VALID THRU</span>
               <span className="bc-card-expiry font-mono">
                 {showDetails ? expiry : '••/••'}
               </span>
             </div>
-            <div>
+            <div className="bc-card-cvv-col">
               <span className="bc-card-label">CVV</span>
               <span className="bc-card-expiry font-mono">
                 {showDetails ? cvv : '•••'}
               </span>
             </div>
+          </div>
+          {/* Visa + bank type at very bottom */}
+          <div className="bc-card-footer">
+            <span className="bc-card-bank-type">VISA DEBIT</span>
             <div className="bc-visa-logo">
               <VisaLogo />
             </div>

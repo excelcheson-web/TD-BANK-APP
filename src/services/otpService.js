@@ -2,8 +2,8 @@
  * OTP Service – generates a 6-digit code and sends it via Resend
  * through a Netlify serverless function at /api/send-otp.
  *
- * Falls back to demo mode (code shown in UI) if the API is
- * unavailable (e.g. local dev without Netlify CLI).
+ * Falls back to demo mode: shows a browser Notification + fires a
+ * custom 'otp-toast' event so the UI can display a toast with the code.
  */
 
 let _lastCode = ''
@@ -17,6 +17,31 @@ export function generateOtp() {
 
 export function getLastCode() {
   return _lastCode
+}
+
+/**
+ * Show a browser Notification + dispatch a toast event with the OTP code.
+ */
+function notifyOtp(code, email) {
+  const msg = `[Internal System] OTP for your transfer is: ${code}`
+
+  // Fire custom event so the app can show a toast
+  window.dispatchEvent(new CustomEvent('otp-toast', {
+    detail: { code, email, message: msg }
+  }))
+
+  // Also attempt a browser Notification
+  if ('Notification' in window) {
+    if (Notification.permission === 'granted') {
+      new Notification('TD Bank – OTP Code', { body: `Sent to ${email}\nYour code: ${code}`, icon: '/td-logo.png' })
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then((perm) => {
+        if (perm === 'granted') {
+          new Notification('TD Bank – OTP Code', { body: `Sent to ${email}\nYour code: ${code}`, icon: '/td-logo.png' })
+        }
+      })
+    }
+  }
 }
 
 /**
@@ -48,7 +73,8 @@ export async function sendOtp(email, type = 'onboarding') {
     console.warn('OTP API unreachable, using demo mode')
   }
 
-  // Demo fallback: return code so the UI can display it
+  // Demo fallback: show notification/toast with the code
+  notifyOtp(code, email)
   return { success: true, code, demo: true }
 }
 

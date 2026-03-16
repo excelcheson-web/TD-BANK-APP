@@ -3661,9 +3661,9 @@ a { color: inherit; text-decoration: none; }
   aspect-ratio: 1.586 / 1;
   border-radius: 14px;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 60%),
-    radial-gradient(ellipse at 85% 20%, rgba(255,255,255,0.06) 0%, transparent 50%),
-    linear-gradient(160deg, #005c2e 0%, #008a00 25%, #00a020 50%, #007a12 75%, #004d1a 100%);
+    radial-gradient(ellipse at 20% 50%, rgba(255,255,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 85% 20%, rgba(255,255,255,0.04) 0%, transparent 50%),
+    linear-gradient(160deg, #0f1923 0%, #162a3a 25%, #1a3248 50%, #162a3a 75%, #0c1219 100%);
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
@@ -3671,10 +3671,10 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
   margin-bottom: var(--sp-5);
   box-shadow:
-    0 16px 48px rgba(0,80,0,0.40),
-    0 4px 12px rgba(0,0,0,0.20),
-    inset 0 1px 0 rgba(255,255,255,0.20),
-    inset 0 -1px 0 rgba(0,0,0,0.15);
+    0 16px 48px rgba(0,0,0,0.55),
+    0 4px 12px rgba(0,0,0,0.30),
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.25);
   transition: opacity 0.4s ease, filter 0.4s ease;
 }
 .bc-card--frozen {
@@ -3739,7 +3739,7 @@ a { color: inherit; text-decoration: none; }
 .bc-card-top {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   position: relative;
   z-index: 2;
 }
@@ -3750,8 +3750,7 @@ a { color: inherit; text-decoration: none; }
 }
 .bc-card-logo {
   filter: brightness(0) invert(1);
-  opacity: 0.95;
-  drop-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  opacity: 0.90;
 }
 .bc-card-bank-text {
   display: flex;
@@ -3768,7 +3767,7 @@ a { color: inherit; text-decoration: none; }
 .bc-card-bank-type {
   font-size: 0.55rem;
   font-weight: 600;
-  color: rgba(255,255,255,0.55);
+  color: rgba(255,255,255,0.45);
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
@@ -3782,11 +3781,11 @@ a { color: inherit; text-decoration: none; }
 }
 
 .bc-card-number {
-  font-size: 1.18rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: rgba(255,255,255,0.92);
-  letter-spacing: 0.18em;
-  margin: 0;
+  letter-spacing: 0.22em;
+  margin: 6px 0 4px;
   text-shadow: 0 1px 3px rgba(0,0,0,0.35);
   position: relative;
   z-index: 2;
@@ -3795,14 +3794,17 @@ a { color: inherit; text-decoration: none; }
 .bc-card-bottom {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 20px;
   position: relative;
   z-index: 2;
 }
 .bc-card-holder-col {
   flex: 1;
   min-width: 0;
+}
+.bc-card-valid-col,
+.bc-card-cvv-col {
+  flex-shrink: 0;
 }
 .bc-card-label {
   display: block;
@@ -6651,3 +6653,171 @@ button:active {
   border-color: rgba(0, 230, 118, 0.3);
   background: rgba(0, 230, 118, 0.08);
 }
+
+/* ── Card Footer (Visa + type) ─────────────────────────────── */
+.bc-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+  margin-top: 2px;
+}
+.bc-card-footer .bc-card-bank-type {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ── Logo Context Menu ─────────────────────────────────────── */
+.db-logo-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.db-logo-btn:hover {
+  background: rgba(255,255,255,0.08);
+}
+.db-logo-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 200px;
+  background: rgba(20,30,20,0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+  padding: 6px;
+  z-index: 9999;
+  animation: logo-menu-in 0.2s var(--ease-out);
+}
+@keyframes logo-menu-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.db-logo-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.db-logo-menu-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+.db-logo-menu-item svg {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.db-logo-menu-divider {
+  height: 1px;
+  margin: 4px 8px;
+  background: rgba(255,255,255,0.08);
+}
+.db-logo-menu-item--logout {
+  color: #f87171;
+}
+.db-logo-menu-item--logout:hover {
+  background: rgba(248,113,113,0.1);
+}
+.db-logo-menu-item--logout svg {
+  opacity: 0.8;
+}
+
+/* Light mode logo menu */
+.db--light .db-logo-btn:hover {
+  background: rgba(0,0,0,0.06);
+}
+.db--light .db-logo-menu {
+  background: rgba(255,255,255,0.96);
+  border-color: rgba(0,0,0,0.1);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
+}
+.db--light .db-logo-menu-item {
+  color: #1a2e1a;
+}
+.db--light .db-logo-menu-item:hover {
+  background: rgba(0,0,0,0.05);
+}
+.db--light .db-logo-menu-divider {
+  background: rgba(0,0,0,0.08);
+}
+.db--light .db-logo-menu-item--logout {
+  color: #dc2626;
+}
+.db--light .db-logo-menu-item--logout:hover {
+  background: rgba(220,38,38,0.06);
+}
+
+/* ── OTP Toast ─────────────────────────────────────────────── */
+.otp-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border: 1px solid rgba(100,149,237,.35);
+  border-radius: 14px;
+  padding: 14px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  animation: toast-in .4s var(--ease-out);
+  cursor: pointer;
+  max-width: 400px;
+  width: 90%;
+}
+.otp-toast-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 1px; }
+.otp-toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.otp-toast-body strong {
+  font-size: .8rem;
+  color: #6495ed;
+  letter-spacing: 0.03em;
+}
+.otp-toast-body span {
+  font-size: .82rem;
+  color: rgba(255,255,255,.85);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  letter-spacing: 0.04em;
+}
+.otp-toast-email {
+  font-size: .68rem !important;
+  color: rgba(255,255,255,.4) !important;
+  font-family: inherit !important;
+  letter-spacing: 0 !important;
+  margin-top: 2px;
+}
+
+/* Light mode OTP toast */
+.db--light .otp-toast {
+  background: linear-gradient(135deg, #f0f4ff, #e8eef9);
+  border-color: rgba(100,149,237,.3);
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+}
+.db--light .otp-toast-body strong { color: #3b6fd4; }
+.db--light .otp-toast-body span { color: #1a2e4a; }
+.db--light .otp-toast-email { color: #6b7f9e !important; }
