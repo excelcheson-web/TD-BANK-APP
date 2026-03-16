@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import VaultLoader from './VaultLoader'
 import TDLogo from './TDLogo'
+import { loginUser } from '../services/firebase'
 
 /* ── Inline SVG icons ────────────────────────────────────── */
 
@@ -64,31 +65,46 @@ export default function LoginScreen({ onLogin, onRegister }) {
     try { return JSON.parse(localStorage.getItem('securebank_user') || 'null') } catch { return null }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
 
-    const stored = getStoredUser()
-
-    if (!stored) {
-      setError('No account found. Please create an account first.')
-      return
-    }
-
-    if (stored.email?.toLowerCase() !== email.trim().toLowerCase()) {
-      setError('Invalid email or password.')
-      return
-    }
-
     setLoading(true)
     setLoadingMsg('Verifying credentials…')
-    setTimeout(() => setLoadingMsg('Authenticating with server…'), 2000)
-    setTimeout(() => setLoadingMsg('Establishing secure session…'), 3800)
-    setTimeout(() => {
+
+    try {
+      setTimeout(() => setLoadingMsg('Authenticating with server…'), 2000)
+      setTimeout(() => setLoadingMsg('Establishing secure session…'), 3800)
+
+      const profile = await loginUser(email.trim(), password)
+
+      // Sync to localStorage for EmailJS and other features
+      localStorage.setItem('securebank_user', JSON.stringify(profile))
+      localStorage.setItem('user_account_type', profile.accountType)
+      localStorage.setItem('user_email', profile.email)
+      localStorage.setItem('user_name', profile.name)
+      localStorage.setItem('bank_balance', String(profile.balance || 0))
+
+      // Keep the loading UI for at least 5s for UX
+      setTimeout(() => {
+        setLoading(false)
+        setLoadingMsg('')
+        onLogin(profile)
+      }, 5000)
+    } catch (err) {
       setLoading(false)
       setLoadingMsg('')
-      onLogin(stored)
-    }, 5000)
+      const code = err.code || ''
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
+        setError('Invalid email or password.')
+      } else if (code === 'auth/wrong-password') {
+        setError('Invalid email or password.')
+      } else if (code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please try again later.')
+      } else {
+        setError(err.message || 'Login failed. Please try again.')
+      }
+    }
   }
 
   /* ── Face ID Handler ─────────────────────────────────── */

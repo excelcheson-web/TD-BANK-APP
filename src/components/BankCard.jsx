@@ -106,7 +106,7 @@ export default function BankCard({ user, onClose }) {
           {frozen && <div className="bc-frozen-watermark">FROZEN</div>}
           {/* Top row: logo left, contactless right */}
           <div className="bc-card-top">
-            <TDLogo size={44} className="bc-card-logo" />
+            <img src="/td-logo.png" alt="TD Bank" className="bc-card-logo" draggable="false" />
             <ContactlessIcon />
           </div>
           {/* Chip */}

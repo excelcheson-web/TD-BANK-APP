@@ -68,6 +68,7 @@ export default function OnboardingFlow({ onComplete }) {
   /* ── Form state ─────────────────────────────────────────── */
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [dob, setDob] = useState('')
   const [emailVerified, setEmailVerified] = useState(false)
   const [showOtp, setShowOtp] = useState(false)
@@ -155,6 +156,7 @@ export default function OnboardingFlow({ onComplete }) {
     onComplete({
       fullName,
       email,
+      password,
       dob,
       idFile,
       profilePic,
@@ -167,7 +169,7 @@ export default function OnboardingFlow({ onComplete }) {
 
   /* ── Can proceed? ───────────────────────────────────────── */
   const canNext =
-    step === 1 ? fullName.trim() && email.trim() && dob :
+    step === 1 ? fullName.trim() && email.trim() && password.length >= 6 && dob :
     step === 2 ? true :
     pin.join('').length === 6 && confirmPin.join('').length === 6
 
@@ -212,6 +214,19 @@ export default function OnboardingFlow({ onComplete }) {
               <span className="ob-verified-badge">✓ Verified</span>
             )}
           </div>
+        </div>
+
+        <div className="ob-field">
+          <label className="ob-label" htmlFor="ob-password">Password</label>
+          <input
+            id="ob-password"
+            className="ob-input"
+            type="password"
+            placeholder="Min 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+          />
         </div>
 
         <div className="ob-field">

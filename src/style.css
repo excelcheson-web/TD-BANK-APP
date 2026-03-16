@@ -3749,10 +3749,13 @@ a { color: inherit; text-decoration: none; }
   gap: 10px;
 }
 .bc-card-logo {
-  width: 44px;
-  height: auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
   filter: brightness(0) invert(1);
   opacity: 0.90;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .bc-card-bank-text {
   display: flex;

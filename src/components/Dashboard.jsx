@@ -16,6 +16,7 @@ import TransactionHistory from './TransactionHistory'
 import FinancialServices from './FinancialServices'
 import CryptoPage from './CryptoPage'
 import TDLogo from './TDLogo'
+import { updateUserProfile, logoutUser } from '../services/firebase'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -319,6 +320,13 @@ export default function Dashboard({ user, onLogout }) {
     return () => window.removeEventListener('storage', onStorage)
   }, [checkNotifications, checkSysAlert])
 
+  // Sync balance to Firestore when it changes locally
+  useEffect(() => {
+    if (user?.uid && bankBalance !== undefined) {
+      updateUserProfile(user.uid, { balance: bankBalance }).catch(() => {})
+    }
+  }, [bankBalance, user?.uid])
+
   // Email-sent toast listener
   useEffect(() => {
     const onEmail = (e) => {
@@ -527,7 +535,7 @@ export default function Dashboard({ user, onLogout }) {
                 {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </button>
               <div className="db-logo-menu-divider" />
-              <button className="db-logo-menu-item db-logo-menu-item--logout" onClick={() => { setShowLogoMenu(false); localStorage.removeItem('securebank_user'); localStorage.removeItem('user_account_type'); localStorage.removeItem('privacy_state'); onLogout() }}>
+              <button className="db-logo-menu-item db-logo-menu-item--logout" onClick={async () => { setShowLogoMenu(false); try { await logoutUser() } catch {} localStorage.removeItem('securebank_user'); localStorage.removeItem('user_account_type'); localStorage.removeItem('privacy_state'); onLogout() }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 Logout
               </button>
