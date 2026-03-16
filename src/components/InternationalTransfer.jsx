@@ -82,7 +82,7 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
     }
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     const { beneficiary, iban, swift, bankName, country, amount } = form
 
@@ -123,28 +123,29 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
     setIsLoading(true)
     setLoadingMsg('Connecting to SWIFT network…')
 
-    setTimeout(async () => {
+    setTimeout(() => {
       // Step 2: Send OTP to registered email
-      setLoadingMsg('Verifying with server…')
+      window.console.clear()
+      setLoadingMsg('Sending verification code…')
       setOtpCode(['', '', '', '', '', ''])
       setOtpError('')
 
       const email = getUserEmail()
-      try {
-        const res = await sendOtp(email, 'transfer')
-        if (res.error) {
+      const code = sendOtp(
+        () => {
+          // Success
+          setOtpRef(code)
+          setOtpConfirmMsg(`A secure code has been sent to ${email}. Please check your inbox to confirm the transfer.`)
+          setIsLoading(false)
+          setOtpStep(true)
+        },
+        (err) => {
+          // Failure
+          alert('EmailJS Error: ' + JSON.stringify(err))
+          setIsLoading(false)
           setPendingTxn(null)
-          return
         }
-        const sentTo = res.email || email
-        setOtpRef(res.code || '')
-        setOtpConfirmMsg(`A secure code has been sent to ${sentTo}. Please check your inbox to confirm the transfer.`)
-        setOtpStep(true)
-      } catch {
-        setPendingTxn(null)
-      } finally {
-        setIsLoading(false)
-      }
+      )
     }, 3000)
   }
 

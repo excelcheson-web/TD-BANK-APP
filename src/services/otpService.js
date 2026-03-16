@@ -1,6 +1,6 @@
 /**
- * OTP Service – generates a 6-digit code and sends it via EmailJS.
- * The OTP is never exposed in console, alerts, or browser notifications.
+ * OTP Service – pure frontend EmailJS setup.
+ * No Netlify functions, no Stripe, no server calls.
  */
 
 import emailjs from '@emailjs/browser'
@@ -9,7 +9,6 @@ const SERVICE_ID  = 'iHrU0CHXmi5SXfRJ7E46A'
 const TEMPLATE_ID = 'template_pxc66y7'
 const PUBLIC_KEY  = 'kLiAq79ZBAjG8epzA'
 
-// Initialize EmailJS once
 emailjs.init(PUBLIC_KEY)
 
 let _lastCode = ''
@@ -26,29 +25,29 @@ export function getLastCode() {
 }
 
 /**
- * Send an OTP to the given email via EmailJS.
- * @param {string} [emailOverride] – optional email; falls back to localStorage 'user_email'
- * @param {'onboarding'|'transfer'} [type='onboarding'] – email template variant
- * @returns {Promise<{ success: boolean, code?: string, email?: string, error?: boolean }>}
+ * Send an OTP email via EmailJS (frontend-only).
+ * Uses .then()/.catch() — no server endpoints.
  */
-export async function sendOtp(emailOverride, type = 'onboarding') {
-  const email = emailOverride || localStorage.getItem('user_email') || ''
+export function sendOtp(onSuccess, onError) {
   const code = generateOtp()
 
-  try {
-    await emailjs.send(SERVICE_ID, TEMPLATE_ID, { otp_code: code })
-    return { success: true, code, email }
-  } catch {
-    // Dispatch error toast so the UI can show a connection error
-    window.dispatchEvent(new CustomEvent('otp-toast', {
-      detail: {
-        email,
-        message: 'Connection Error: Could not send verification email. Please check your internet.',
-        isError: true
-      }
-    }))
-    return { success: false, code, email, error: true }
+  const templateParams = {
+    to_email: localStorage.getItem('user_email'),
+    otp_code: code,
+    user_name: localStorage.getItem('user_name')
   }
+
+  emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY)
+    .then((response) => {
+      console.log('SUCCESS!', response.status, response.text)
+      if (onSuccess) onSuccess(code)
+    })
+    .catch((err) => {
+      console.error('EmailJS Error:', err)
+      if (onError) onError(err)
+    })
+
+  return code
 }
 
 export function verifyOtp(input) {
