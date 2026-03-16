@@ -124,11 +124,14 @@ const WealthNavIcon = () => (
     <line x1="6" y1="20" x2="6" y2="16" />
   </svg>
 )
-const NotifNavIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-  </svg>
+const NotifNavIcon = ({ hasUnread }) => (
+  <span style={{ position: 'relative', display: 'inline-flex' }}>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+    {hasUnread && <span className="notif-red-dot" />}
+  </span>
 )
 const SupportNavIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -212,6 +215,7 @@ export default function Dashboard({ user, onLogout }) {
   const [balanceHidden, setBalanceHidden] = useState(() => localStorage.getItem('privacy_state') === 'hidden')
   const [sysAlert, setSysAlert] = useState(null)
   const [showNotifCenter, setShowNotifCenter] = useState(false)
+  const [hasUnread, setHasUnread] = useState(false)
   const [emailToast, setEmailToast] = useState(null)
   const [otpToast, setOtpToast] = useState(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'dark')
@@ -276,12 +280,16 @@ export default function Dashboard({ user, onLogout }) {
     try {
       const raw = localStorage.getItem(NOTIF_KEY)
       const notifs = raw ? JSON.parse(raw) : []
-      const unread = notifs.find((n) => !n.read)
+      const unreadList = notifs.filter((n) => !n.read)
+      setHasUnread(unreadList.length > 0)
+      const unread = unreadList[0]
       if (unread) {
         setNotification(unread)
         // Mark as read
         const updated = notifs.map((n) => n.id === unread.id ? { ...n, read: true } : n)
         localStorage.setItem(NOTIF_KEY, JSON.stringify(updated))
+        // Re-check remaining unread after marking
+        setHasUnread(updated.filter((n) => !n.read).length > 0)
         // Auto-dismiss after 6 seconds
         setTimeout(() => setNotification(null), 6000)
       }
@@ -984,7 +992,7 @@ export default function Dashboard({ user, onLogout }) {
           { id: 'home', icon: <HomeNavIcon />, label: 'Home' },
           { id: 'cards', icon: <CardsNavIcon />, label: 'Cards' },
           { id: 'services', icon: <WealthNavIcon />, label: 'Services' },
-          { id: 'notifications', icon: <NotifNavIcon />, label: 'Alerts' },
+          { id: 'notifications', icon: <NotifNavIcon hasUnread={hasUnread} />, label: 'Alerts' },
           { id: 'support', icon: <SupportNavIcon />, label: 'Support' },
         ].map((n) => (
           <button
@@ -999,7 +1007,17 @@ export default function Dashboard({ user, onLogout }) {
               } else if (n.id === 'services') {
                 openWithLoading(() => setShowFinServices(true))
               } else if (n.id === 'notifications') {
-                openWithLoading(() => setShowNotifCenter(true))
+                openWithLoading(() => {
+                  setShowNotifCenter(true)
+                  // Mark all notifications as read when opening center
+                  try {
+                    const raw = localStorage.getItem(NOTIF_KEY)
+                    const notifs = raw ? JSON.parse(raw) : []
+                    const updated = notifs.map((n) => ({ ...n, read: true }))
+                    localStorage.setItem(NOTIF_KEY, JSON.stringify(updated))
+                    setHasUnread(false)
+                  } catch {}
+                })
               } else if (n.id === 'support') {
                 openWithLoading(() => setShowAiSupport(true))
               }
