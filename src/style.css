@@ -6824,3 +6824,17 @@ button:active {
 .db--light .otp-toast-body strong { color: #3b6fd4; }
 .db--light .otp-toast-body span { color: #1a2e4a; }
 .db--light .otp-toast-email { color: #6b7f9e !important; }
+
+/* OTP toast error variant */
+.otp-toast--error {
+  background: linear-gradient(135deg, #2e1a1a, #3e1616) !important;
+  border-color: rgba(248,113,113,.35) !important;
+}
+.otp-toast--error .otp-toast-body strong { color: #f87171 !important; }
+.otp-toast--error .otp-toast-body span { color: rgba(255,255,255,.8) !important; }
+.db--light .otp-toast--error {
+  background: linear-gradient(135deg, #fff0f0, #fde8e8) !important;
+  border-color: rgba(220,38,38,.25) !important;
+}
+.db--light .otp-toast--error .otp-toast-body strong { color: #dc2626 !important; }
+.db--light .otp-toast--error .otp-toast-body span { color: #4a1a1a !important; }

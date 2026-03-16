@@ -79,7 +79,7 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const { beneficiary, accountNumber, bankName, amount } = form
 
@@ -121,13 +121,21 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
     setLoadingMsg('Verifying with server…')
 
     const email = getUserEmail()
-    sendOtp(email, 'transfer').then((res) => {
+    try {
+      const res = await sendOtp(email, 'transfer')
+      if (res.error) {
+        setPendingTxn(null)
+        return
+      }
       const sentTo = res.email || email
       setOtpRef(res.code || '')
       setOtpConfirmMsg(`A secure code has been sent to ${sentTo}. Please check your inbox to confirm the transfer.`)
-      setIsLoading(false)
       setOtpStep(true)
-    })
+    } catch {
+      setPendingTxn(null)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleOtpVerify = () => {
