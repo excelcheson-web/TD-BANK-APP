@@ -14,7 +14,8 @@ import {
   setDoc,
   getDoc,
   updateDoc,
-  arrayUnion
+  arrayUnion,
+  onSnapshot
 } from 'firebase/firestore'
 
 const firebaseConfig = {
@@ -157,7 +158,7 @@ export async function syncLocalToCloud() {
 }
 
 /**
- * Pull transfer history + balance from Firestore into localStorage.
+ * Pull transfer history + balance from Firestore into localStorage (one-time).
  */
 export async function syncCloudToLocal(uid) {
   const snap = await getDoc(doc(db, 'users', uid))
@@ -169,4 +170,34 @@ export async function syncCloudToLocal(uid) {
   if (data.balance !== undefined) {
     localStorage.setItem('bank_balance', String(data.balance))
   }
+}
+
+/**
+ * Subscribe to real-time changes on the user's Firestore document.
+ * Calls onChange(data) every time balance or history changes on any device.
+ * Returns an unsubscribe function.
+ */
+export function subscribeToUserDoc(uid, onChange) {
+  return onSnapshot(doc(db, 'users', uid), (snap) => {
+    if (!snap.exists()) return
+    const data = snap.data()
+    // Keep localStorage in sync for components that read it directly
+    if (data.transferHistory) {
+      localStorage.setItem('transfer_history', JSON.stringify(data.transferHistory))
+    }
+    if (data.balance !== undefined) {
+      localStorage.setItem('bank_balance', String(data.balance))
+    }
+    if (data.profilePic !== undefined) {
+      const raw = localStorage.getItem('securebank_user')
+      if (raw) {
+        try {
+          const u = JSON.parse(raw)
+          u.profilePic = data.profilePic
+          localStorage.setItem('securebank_user', JSON.stringify(u))
+        } catch {}
+      }
+    }
+    onChange(data)
+  })
 }

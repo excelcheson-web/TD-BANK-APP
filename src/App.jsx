@@ -4,7 +4,7 @@ import LoginScreen from './components/LoginScreen'
 import OnboardingFlow from './components/OnboardingFlow'
 import Dashboard from './components/Dashboard'
 import SecurityLock from './components/SecurityLock'
-import { registerUser, getUserProfile, onAuthChange, syncCloudToLocal } from './services/firebase'
+import { registerUser, getUserProfile, onAuthChange, subscribeToUserDoc } from './services/firebase'
 
 export default function App() {
   const [booting, setBooting] = useState(true)
@@ -14,26 +14,29 @@ export default function App() {
 
   // Listen for Firebase Auth state changes
   useEffect(() => {
+    let unsubSnapshot = null
     const unsub = onAuthChange(async (firebaseUser) => {
+      if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null }
       if (firebaseUser) {
         const profile = await getUserProfile(firebaseUser.uid)
         if (profile) {
           setUser(profile)
-          // Keep localStorage in sync for EmailJS and other features
           localStorage.setItem('securebank_user', JSON.stringify(profile))
           localStorage.setItem('user_account_type', profile.accountType)
           localStorage.setItem('user_email', profile.email)
           localStorage.setItem('user_name', profile.name)
           localStorage.setItem('bank_balance', String(profile.balance || 0))
-          // Pull transfer history from cloud
-          await syncCloudToLocal(firebaseUser.uid).catch(() => {})
+          // Real-time listener keeps localStorage + user state always in sync
+          unsubSnapshot = subscribeToUserDoc(firebaseUser.uid, (data) => {
+            setUser((prev) => prev ? { ...prev, balance: data.balance ?? prev.balance, profilePic: data.profilePic ?? prev.profilePic } : prev)
+          })
         }
       } else {
         setUser(null)
       }
       setAuthLoading(false)
     })
-    return () => unsub()
+    return () => { unsub(); if (unsubSnapshot) unsubSnapshot() }
   }, [])
 
   // Initialize bank_balance in localStorage if not set
