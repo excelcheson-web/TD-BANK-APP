@@ -94,6 +94,7 @@ export default function LoginScreen({ onLogin, onRegister }) {
     } catch (err) {
       setLoading(false)
       setLoadingMsg('')
+      console.log('Login error:', err.code, err.message)
       const code = err.code || ''
       if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
         setError('Invalid email or password.')
@@ -232,6 +233,9 @@ export default function LoginScreen({ onLogin, onRegister }) {
                 type={showPw ? 'text' : 'password'}
                 placeholder="••••••••"
                 autoComplete="current-password"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
