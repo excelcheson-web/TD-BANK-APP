@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { generateTransferPDF } from '../services/pdfReceipt'
 import { sendTransferEmail } from '../services/emailNotification'
 
@@ -15,6 +15,12 @@ function formatCurrency(n) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+function generateOTP() {
+  const code = String(Math.floor(100000 + Math.random() * 900000))
+  console.log('%c[TD Bank] Your 6-digit confirmation code: ' + code, 'color:#4cff88;font-size:14px;font-weight:bold;background:#0a1a0a;padding:8px 12px;border-radius:6px;')
+  return code
+}
+
 const CloseIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -25,6 +31,12 @@ const GlobeIcon = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" />
     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+)
+
+const ShieldIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 )
 
@@ -39,10 +51,35 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
   })
   const [error, setError] = useState('')
   const [receipt, setReceipt] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadingMsg, setLoadingMsg] = useState('')
+  const [otpStep, setOtpStep] = useState(false)
+  const [otpCode, setOtpCode] = useState(['', '', '', '', '', ''])
+  const [otpError, setOtpError] = useState('')
+  const [otpRef, setOtpRef] = useState('')
+  const [pendingTxn, setPendingTxn] = useState(null)
+  const otpRefs = useRef([])
 
   const update = (field, value) => {
     setForm((p) => ({ ...p, [field]: value }))
     setError('')
+  }
+
+  const handleOtpChange = (idx, value) => {
+    if (!/^\d?$/.test(value)) return
+    setOtpCode((prev) => {
+      const next = [...prev]
+      next[idx] = value
+      return next
+    })
+    setOtpError('')
+    if (value && idx < 5) otpRefs.current[idx + 1]?.focus()
+  }
+
+  const handleOtpKeyDown = (idx, e) => {
+    if (e.key === 'Backspace' && !otpCode[idx] && idx > 0) {
+      otpRefs.current[idx - 1]?.focus()
+    }
   }
 
   const handleSubmit = (e) => {
@@ -65,9 +102,10 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
       return
     }
 
+    // Build pending transaction
     const newBalance = balance - amt
     const ref = genRef()
-    const txn = {
+    setPendingTxn({
       id: Date.now(),
       ref,
       type: 'international',
@@ -79,23 +117,113 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
       amount: amt,
       balanceAfter: newBalance,
       date: new Date().toISOString(),
+    })
+
+    // Step 1: SWIFT network connection
+    setIsLoading(true)
+    setLoadingMsg('Connecting to SWIFT network…')
+
+    setTimeout(() => {
+      // Step 2: Server verification
+      setLoadingMsg('Verifying with server…')
+      const code = generateOTP()
+      setOtpRef(code)
+      setOtpCode(['', '', '', '', '', ''])
+      setOtpError('')
+
+      setTimeout(() => {
+        setIsLoading(false)
+        setOtpStep(true)
+      }, 1500)
+    }, 2000)
+  }
+
+  const handleOtpVerify = () => {
+    const entered = otpCode.join('')
+    if (entered.length < 6) {
+      setOtpError('Please enter all 6 digits.')
+      return
+    }
+    if (entered !== otpRef) {
+      setOtpError('Invalid code. Please try again.')
+      return
     }
 
-    // Save to history
-    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
-    history.unshift(txn)
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+    // OTP verified → process transfer
+    setOtpStep(false)
+    setIsLoading(true)
+    setLoadingMsg('Processing international transfer…')
 
-    // Update balance
-    localStorage.setItem('bank_balance', String(newBalance))
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'bank_balance',
-      newValue: String(newBalance),
-    }))
-    onBalanceUpdate(newBalance)
+    setTimeout(() => {
+      const txn = pendingTxn
+      const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
+      history.unshift(txn)
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
 
-    sendTransferEmail(txn)
-    setReceipt(txn)
+      localStorage.setItem('bank_balance', String(txn.balanceAfter))
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'bank_balance',
+        newValue: String(txn.balanceAfter),
+      }))
+      onBalanceUpdate(txn.balanceAfter)
+      sendTransferEmail(txn)
+
+      setIsLoading(false)
+      setReceipt(txn)
+    }, 3000)
+  }
+
+  // ── Loading view ──
+  if (isLoading) {
+    return (
+      <div className="tf-overlay">
+        <div className="tf-sheet tf-loading-sheet">
+          <div className="server-spinner" />
+          <div className="server-progress">
+            <div className="server-progress-bar"><div className="server-progress-fill" /></div>
+            <p className="server-progress-msg">{loadingMsg}</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── OTP Security Modal ──
+  if (otpStep) {
+    return (
+      <div className="tf-overlay">
+        <div className="tf-sheet otp-security-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="otp-security-icon"><ShieldIcon /></div>
+          <h2 className="otp-security-title">Security Verification</h2>
+          <p className="otp-security-desc">
+            A 6-digit confirmation code has been sent to your registered email.
+          </p>
+          <div className="otp-security-row">
+            {otpCode.map((d, i) => (
+              <input
+                key={i}
+                ref={(el) => (otpRefs.current[i] = el)}
+                className={`otp-security-box ${otpError ? 'otp-security-box--error' : ''}`}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={d}
+                onChange={(e) => handleOtpChange(i, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                autoFocus={i === 0}
+              />
+            ))}
+          </div>
+          {otpError && <p className="otp-security-error">{otpError}</p>}
+          <button className="tf-btn tf-btn--primary" onClick={handleOtpVerify} disabled={otpCode.join('').length < 6}>
+            Confirm Transfer
+          </button>
+          <button className="tf-btn tf-btn--ghost" onClick={() => { setOtpStep(false); setPendingTxn(null) }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    )
   }
 
   // ── Receipt view ──

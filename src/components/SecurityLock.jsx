@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import TDLogo from './TDLogo'
 
-const IDLE_TIMEOUT = 30000 // 30 seconds
+const IDLE_TIMEOUT = 60000 // 60 seconds
 
 export default function SecurityLock({ children }) {
   const [locked, setLocked] = useState(false)

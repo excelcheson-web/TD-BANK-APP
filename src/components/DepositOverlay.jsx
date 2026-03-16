@@ -30,6 +30,8 @@ export default function DepositOverlay({ balance, onClose, onBalanceUpdate }) {
   const [amount, setAmount] = useState('')
   const [error, setError] = useState('')
   const [receipt, setReceipt] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadingMsg, setLoadingMsg] = useState('')
 
   const handleDeposit = (e) => {
     e.preventDefault()
@@ -39,30 +41,55 @@ export default function DepositOverlay({ balance, onClose, onBalanceUpdate }) {
       return
     }
 
-    const newBalance = balance + amt
-    const ref = genRef()
-    const txn = {
-      id: Date.now(),
-      ref,
-      type: 'deposit',
-      method: method,
-      amount: amt,
-      balanceAfter: newBalance,
-      date: new Date().toISOString(),
-    }
+    setIsLoading(true)
+    setLoadingMsg('Verifying deposit…')
 
-    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
-    history.unshift(txn)
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+    setTimeout(() => {
+      setLoadingMsg('Processing funds…')
+    }, 1200)
 
-    localStorage.setItem('bank_balance', String(newBalance))
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'bank_balance',
-      newValue: String(newBalance),
-    }))
-    onBalanceUpdate(newBalance)
+    setTimeout(() => {
+      const newBalance = balance + amt
+      const ref = genRef()
+      const txn = {
+        id: Date.now(),
+        ref,
+        type: 'deposit',
+        method: method,
+        amount: amt,
+        balanceAfter: newBalance,
+        date: new Date().toISOString(),
+      }
 
-    setReceipt({ ref, amount: amt, newBalance })
+      const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
+      history.unshift(txn)
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+
+      localStorage.setItem('bank_balance', String(newBalance))
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'bank_balance',
+        newValue: String(newBalance),
+      }))
+      onBalanceUpdate(newBalance)
+
+      setIsLoading(false)
+      setReceipt({ ref, amount: amt, newBalance })
+    }, 2800)
+  }
+
+  // Loading
+  if (isLoading) {
+    return (
+      <div className="tf-overlay">
+        <div className="tf-sheet tf-loading-sheet">
+          <div className="server-spinner" />
+          <div className="server-progress">
+            <div className="server-progress-bar"><div className="server-progress-fill" /></div>
+            <p className="server-progress-msg">{loadingMsg}</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Receipt

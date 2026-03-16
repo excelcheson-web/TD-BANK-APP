@@ -14,6 +14,7 @@ import BillPayment from './BillPayment'
 import Investment from './Investment'
 import TransactionHistory from './TransactionHistory'
 import FinancialServices from './FinancialServices'
+import CryptoPage from './CryptoPage'
 import TDLogo from './TDLogo'
 
 const STORAGE_KEY = 'securebank_admin'
@@ -212,6 +213,7 @@ export default function Dashboard({ user, onLogout }) {
   const [showNotifCenter, setShowNotifCenter] = useState(false)
   const [emailToast, setEmailToast] = useState(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'dark')
+  const [adToast, setAdToast] = useState(null)
   const wealthRef = useRef(null)
 
   const toggleTheme = () => {
@@ -225,6 +227,32 @@ export default function Dashboard({ user, onLogout }) {
     setBalanceHidden(next)
     localStorage.setItem('privacy_state', next ? 'hidden' : 'visible')
   }
+
+  /* ── Central Ad Click Handler ───────────────────────────── */
+  const handleAdClick = useCallback((type) => {
+    switch (type) {
+      case 'refer': {
+        const refUser = user?.email ? encodeURIComponent(user.email.split('@')[0]) : 'USER'
+        const refLink = `https://tdbank-vault.netlify.app/signup?ref=${refUser}`
+        navigator.clipboard.writeText(refLink).then(() => {
+          setAdToast('Referral Link Copied!')
+          setTimeout(() => setAdToast(null), 3000)
+        }).catch(() => {
+          setAdToast('Referral Link Copied!')
+          setTimeout(() => setAdToast(null), 3000)
+        })
+        break
+      }
+      case 'receive':
+        setShowDeposit(true)
+        break
+      case 'trust':
+        setShowAccountInfo(true)
+        break
+      default:
+        break
+    }
+  }, [user])
 
   // Check for pending notifications
   const checkNotifications = useCallback(() => {
@@ -400,6 +428,11 @@ export default function Dashboard({ user, onLogout }) {
           onClose={() => setShowBankCard(false)}
         />
       )}
+      {showCrypto && (
+        <CryptoPage
+          onClose={() => setShowCrypto(false)}
+        />
+      )}
       {showScheduled && (
         <ScheduledTransfer
           balance={bankBalance}
@@ -508,11 +541,11 @@ export default function Dashboard({ user, onLogout }) {
                 if (admin.suspended) { setShowSuspend(true) } else { setShowLocalTransfer(true) }
               }},
               { icon: <DepositIcon />, label: 'Deposit', action: () => setShowDeposit(true) },
-              { icon: <CryptoIcon />, label: 'Crypto', action: () => setShowCrypto(!showCrypto) },
+              { icon: <CryptoIcon />, label: 'Crypto', action: () => setShowCrypto(true) },
               { icon: <CardIcon />, label: 'Card', action: () => setShowBankCard(true) },
             ].map((a) => (
               <button key={a.label} className="db-quick-btn" onClick={a.action}>
-                <div className={`db-quick-icon ${a.label === 'Crypto' && showCrypto ? 'db-quick-icon--active' : ''}`}>{a.icon}</div>
+                <div className="db-quick-icon">{a.icon}</div>
                 <span className="db-quick-label">{a.label}</span>
               </button>
             ))}
@@ -537,12 +570,20 @@ export default function Dashboard({ user, onLogout }) {
         </div>
       </section>
 
+      {/* ── Ad Toast ──────────────────────────────────────── */}
+      {adToast && (
+        <div className="ad-toast" onClick={() => setAdToast(null)}>
+          <span className="ad-toast-icon">✓</span>
+          <span className="ad-toast-msg">{adToast}</span>
+        </div>
+      )}
+
       {/* ── Ad Slider ────────────────────────────────────── */}
       <section className="db-section ad-slider-section">
         <div className="ad-slider">
           <div className="ad-track">
             {/* Banner 1 – Receive Money */}
-            <div className="ad-banner ad-banner--globe">
+            <div className="ad-banner ad-banner--globe" onClick={() => handleAdClick('receive')} role="button" tabIndex={0}>
               <img className="ad-banner-img" src="https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800&h=400&fit=crop&q=80" alt="" />
               <div className="ad-banner-overlay" />
               <div className="ad-banner-content">
@@ -552,7 +593,7 @@ export default function Dashboard({ user, onLogout }) {
               </div>
             </div>
             {/* Banner 2 – Refer & Earn */}
-            <div className="ad-banner ad-banner--refer">
+            <div className="ad-banner ad-banner--refer" onClick={() => handleAdClick('refer')} role="button" tabIndex={0}>
               <img className="ad-banner-img" src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&h=400&fit=crop&q=80" alt="" />
               <div className="ad-banner-overlay" />
               <div className="ad-banner-content">
@@ -562,7 +603,7 @@ export default function Dashboard({ user, onLogout }) {
               </div>
             </div>
             {/* Banner 3 – Trusted by Millions */}
-            <div className="ad-banner ad-banner--trust">
+            <div className="ad-banner ad-banner--trust" onClick={() => handleAdClick('trust')} role="button" tabIndex={0}>
               <img className="ad-banner-img" src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&h=400&fit=crop&q=80" alt="" />
               <div className="ad-banner-overlay" />
               <div className="ad-banner-content">
@@ -572,7 +613,7 @@ export default function Dashboard({ user, onLogout }) {
               </div>
             </div>
             {/* Duplicate for seamless loop */}
-            <div className="ad-banner ad-banner--globe">
+            <div className="ad-banner ad-banner--globe" onClick={() => handleAdClick('receive')} role="button" tabIndex={0}>
               <img className="ad-banner-img" src="https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800&h=400&fit=crop&q=80" alt="" />
               <div className="ad-banner-overlay" />
               <div className="ad-banner-content">
@@ -669,35 +710,6 @@ export default function Dashboard({ user, onLogout }) {
           </section>
         )
       })()}
-
-      {/* ── Crypto Assets (toggled by Crypto quick-action button) ── */}
-      <div ref={wealthRef} />
-      {showCrypto && (
-        <section className="db-section db-crypto-section">
-          <h2 className="db-section-title">Digital Assets</h2>
-          <div className="db-crypto-list">
-            {CRYPTO.map((c) => (
-              <div key={c.symbol} className="db-crypto-row">
-                <div className="db-crypto-icon" style={{ background: c.color }}>
-                  {c.symbol.charAt(0)}
-                </div>
-                <div className="db-crypto-info">
-                  <span className="db-crypto-name">{c.name}</span>
-                  <span className="db-crypto-symbol">{c.symbol}</span>
-                </div>
-                <div className="db-crypto-price-col">
-                  <span className="db-crypto-price font-mono">
-                    ${c.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                  <span className={`db-crypto-change ${c.change >= 0 ? 'db-crypto-change--up' : 'db-crypto-change--down'}`}>
-                    {c.change >= 0 ? '+' : ''}{c.change}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* ── Transactions & Statements ──────────────────── */}
       <section className="db-section">

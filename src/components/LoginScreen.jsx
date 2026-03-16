@@ -51,37 +51,126 @@ export default function LoginScreen({ onLogin, onRegister }) {
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loadingMsg, setLoadingMsg] = useState('')
   const [error, setError] = useState('')
+  const [faceIdState, setFaceIdState] = useState('idle') // idle | scanning | success | denied
+  const [showForgot, setShowForgot] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotStep, setForgotStep] = useState('email') // email | reset | done
+  const [newPin, setNewPin] = useState('')
+  const [forgotError, setForgotError] = useState('')
+
+  const getStoredUser = () => {
+    try { return JSON.parse(localStorage.getItem('securebank_user') || 'null') } catch { return null }
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
     setError('')
 
-    // Check if a registered account exists
-    const stored = (() => {
-      try { return JSON.parse(localStorage.getItem('securebank_user') || 'null') } catch { return null }
-    })()
+    const stored = getStoredUser()
 
     if (!stored) {
       setError('No account found. Please create an account first.')
       return
     }
 
-    // Match email (case-insensitive)
     if (stored.email?.toLowerCase() !== email.trim().toLowerCase()) {
       setError('Invalid email or password.')
       return
     }
 
     setLoading(true)
+    setLoadingMsg('Verifying credentials…')
+    setTimeout(() => setLoadingMsg('Authenticating with server…'), 1200)
     setTimeout(() => {
       setLoading(false)
+      setLoadingMsg('')
       onLogin(stored)
-    }, 2200)
+    }, 2800)
+  }
+
+  /* ── Face ID Handler ─────────────────────────────────── */
+  const handleFaceId = () => {
+    if (faceIdState === 'scanning') return
+    setError('')
+    setFaceIdState('scanning')
+
+    setTimeout(() => {
+      const stored = getStoredUser()
+      if (stored) {
+        setFaceIdState('success')
+        setTimeout(() => onLogin(stored), 600)
+      } else {
+        setFaceIdState('denied')
+        setTimeout(() => setFaceIdState('idle'), 2500)
+      }
+    }, 2000)
+  }
+
+  /* ── Forgot Password Handler ─────────────────────────── */
+  const handleForgotSubmit = (e) => {
+    e.preventDefault()
+    setForgotError('')
+    const stored = getStoredUser()
+    if (!stored) {
+      setForgotError('No account found.')
+      return
+    }
+    if (stored.email?.toLowerCase() !== forgotEmail.trim().toLowerCase()) {
+      setForgotError('Email does not match our records.')
+      return
+    }
+    setForgotStep('reset')
+  }
+
+  const handleResetPin = (e) => {
+    e.preventDefault()
+    setForgotError('')
+    if (newPin.length < 4) {
+      setForgotError('PIN must be at least 4 digits.')
+      return
+    }
+    const stored = getStoredUser()
+    if (stored) {
+      stored.pin = newPin
+      localStorage.setItem('securebank_user', JSON.stringify(stored))
+    }
+    setForgotStep('done')
+    setTimeout(() => {
+      setShowForgot(false)
+      setForgotStep('email')
+      setForgotEmail('')
+      setNewPin('')
+    }, 2500)
+  }
+
+  const openForgot = (e) => {
+    e.preventDefault()
+    setShowForgot(true)
+    setForgotStep('email')
+    setForgotEmail('')
+    setNewPin('')
+    setForgotError('')
   }
 
   if (loading) {
-    return <VaultLoader message="Verifying credentials…" />
+    return (
+      <div className="login-screen">
+        <div className="login-blob login-blob--1" />
+        <div className="login-blob login-blob--2" />
+        <div className="login-blob login-blob--3" />
+        <div className="login-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div className="login-logo">
+            <TDLogo size={72} className="td-logo" />
+          </div>
+          <div className="server-progress">
+            <div className="server-progress-bar"><div className="server-progress-fill" /></div>
+            <p className="server-progress-msg">{loadingMsg}</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -143,7 +232,7 @@ export default function LoginScreen({ onLogin, onRegister }) {
 
           {/* Forgot link */}
           <div className="login-forgot-row">
-            <a href="#forgot" className="login-forgot">Forgot password?</a>
+            <a href="#forgot" className="login-forgot" onClick={openForgot}>Forgot password?</a>
           </div>
 
           {/* Error message */}
@@ -170,23 +259,98 @@ export default function LoginScreen({ onLogin, onRegister }) {
           {/* Face ID */}
           <button
             type="button"
-            className="login-biometric"
-            onClick={() => {
-              const stored = (() => { try { return JSON.parse(localStorage.getItem('securebank_user') || 'null') } catch { return null } })()
-              if (stored) { onLogin(stored) } else { setError('No account found. Please create an account first.') }
-            }}
+            className={`login-biometric ${faceIdState === 'scanning' ? 'login-biometric--scanning' : ''} ${faceIdState === 'denied' ? 'login-biometric--denied' : ''} ${faceIdState === 'success' ? 'login-biometric--success' : ''}`}
+            onClick={handleFaceId}
+            disabled={faceIdState === 'scanning'}
           >
-            <FaceIdIcon />
-            <span className="login-biometric-label">Face ID</span>
+            {faceIdState === 'scanning' ? (
+              <>
+                <div className="faceid-scan-ring" />
+                <FaceIdIcon />
+                <span className="login-biometric-label">Scanning…</span>
+              </>
+            ) : faceIdState === 'denied' ? (
+              <>
+                <FaceIdIcon />
+                <span className="login-biometric-label login-biometric-label--denied">Access Denied</span>
+              </>
+            ) : faceIdState === 'success' ? (
+              <>
+                <FaceIdIcon />
+                <span className="login-biometric-label login-biometric-label--success">Verified ✓</span>
+              </>
+            ) : (
+              <>
+                <FaceIdIcon />
+                <span className="login-biometric-label">Face ID</span>
+              </>
+            )}
           </button>
         </form>
 
         {/* Register link */}
         <p className="login-register">
-          Don&apos;t have an account?{' '}
+          Don't have an account?{' '}
           <a href="#register" onClick={(e) => { e.preventDefault(); onRegister?.(); }}>Create one</a>
         </p>
       </div>
+
+      {/* ── Forgot Password Modal ──────────────────────────── */}
+      {showForgot && (
+        <div className="forgot-overlay" onClick={() => setShowForgot(false)}>
+          <div className="forgot-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="forgot-close" onClick={() => setShowForgot(false)} aria-label="Close">&times;</button>
+
+            {forgotStep === 'email' && (
+              <form onSubmit={handleForgotSubmit}>
+                <div className="forgot-icon">🔑</div>
+                <h2 className="forgot-title">Reset Password</h2>
+                <p className="forgot-desc">Enter your registered email to verify your identity.</p>
+                <input
+                  className="forgot-input"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  required
+                  autoFocus
+                />
+                {forgotError && <p className="forgot-error">{forgotError}</p>}
+                <button type="submit" className="forgot-btn">Verify Email</button>
+              </form>
+            )}
+
+            {forgotStep === 'reset' && (
+              <form onSubmit={handleResetPin}>
+                <div className="forgot-icon">🔒</div>
+                <h2 className="forgot-title">Set New PIN</h2>
+                <p className="forgot-desc">Create a new 4-digit security PIN.</p>
+                <input
+                  className="forgot-input"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="Enter new PIN"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                  required
+                  autoFocus
+                />
+                {forgotError && <p className="forgot-error">{forgotError}</p>}
+                <button type="submit" className="forgot-btn">Reset PIN</button>
+              </form>
+            )}
+
+            {forgotStep === 'done' && (
+              <div className="forgot-done">
+                <div className="forgot-icon forgot-icon--success">✓</div>
+                <h2 className="forgot-title">PIN Reset Successful</h2>
+                <p className="forgot-desc">Your security PIN has been updated. You can now sign in.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

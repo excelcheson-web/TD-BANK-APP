@@ -525,6 +525,155 @@ a { color: inherit; text-decoration: none; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+.login-biometric-label--denied { color: #ff5252; }
+.login-biometric-label--success { color: #4cff88; }
+
+/* Face ID scanning states */
+.login-biometric--scanning {
+  position: relative;
+  pointer-events: none;
+  border-color: rgba(76,255,136,.4);
+  background: rgba(76,255,136,.06);
+}
+.login-biometric--denied {
+  border-color: rgba(255,82,82,.4);
+  background: rgba(255,82,82,.06);
+  animation: faceid-shake 0.5s ease;
+}
+.login-biometric--success {
+  border-color: rgba(76,255,136,.5);
+  background: rgba(76,255,136,.1);
+}
+
+/* Scanning ring animation */
+.faceid-scan-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 72px; height: 72px;
+  margin: -36px 0 0 -36px;
+  border: 2px solid rgba(76,255,136,.5);
+  border-top-color: #4cff88;
+  border-radius: 50%;
+  animation: faceid-spin 1s linear infinite;
+}
+@keyframes faceid-spin { to { transform: rotate(360deg); } }
+@keyframes faceid-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* ── Forgot Password Modal ──────────────────────────────────── */
+.forgot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: forgotFadeIn 0.3s ease;
+}
+@keyframes forgotFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.forgot-modal {
+  position: relative;
+  width: 90%;
+  max-width: 380px;
+  background: linear-gradient(145deg, rgba(20,50,20,.95), rgba(10,30,10,.98));
+  border: 1px solid rgba(76,255,136,.18);
+  border-radius: 20px;
+  padding: 32px 24px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.5);
+  text-align: center;
+  animation: forgotSlideUp 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes forgotSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.forgot-close {
+  position: absolute;
+  top: 12px; right: 16px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.5);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.forgot-close:hover { color: #fff; }
+.forgot-icon {
+  font-size: 2.2rem;
+  margin-bottom: 12px;
+}
+.forgot-icon--success {
+  width: 48px; height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: rgba(76,255,136,.15);
+  color: #4cff88;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.forgot-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px;
+}
+.forgot-desc {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,.6);
+  margin: 0 0 20px;
+  line-height: 1.4;
+}
+.forgot-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+.forgot-input:focus { border-color: rgba(76,255,136,.5); }
+.forgot-input::placeholder { color: rgba(255,255,255,.35); }
+.forgot-error {
+  color: #ff5252;
+  font-size: 0.8rem;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  background: rgba(255,82,82,.1);
+  border: 1px solid rgba(255,82,82,.2);
+  border-radius: 8px;
+}
+.forgot-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--td-green);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.forgot-btn:hover { background: var(--td-green-dark); }
+.forgot-btn:active { transform: scale(0.98); }
+.forgot-done {
+  padding: 8px 0;
+}
 
 /* ── Register link ──────────────────────────────────────────── */
 .login-register {
@@ -1419,6 +1568,134 @@ a { color: inherit; text-decoration: none; }
 }
 .db-crypto-change--up { color: #16a34a; }
 .db-crypto-change--down { color: #dc2626; }
+
+/* ── Crypto Full Page ───────────────────────────────────────── */
+.crypto-page {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: var(--gray-50, #f8f9fa);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  animation: cryptoPageIn 0.3s ease-out;
+}
+@keyframes cryptoPageIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+.crypto-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--td-green, #008a4a);
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.crypto-page-back {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+.crypto-page-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.crypto-page-portfolio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px 20px;
+  gap: 4px;
+}
+.crypto-page-portfolio-label {
+  font-size: 0.8125rem;
+  color: var(--gray-400, #999);
+  font-weight: 500;
+}
+.crypto-page-portfolio-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--gray-800, #1e1e1e);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.crypto-page-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px;
+}
+.crypto-page-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--white, #fff);
+  border-radius: 14px;
+  border: 1px solid var(--gray-100, #eee);
+}
+.crypto-page-icon {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.crypto-page-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.crypto-page-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--gray-700, #333);
+}
+.crypto-page-symbol {
+  font-size: 0.75rem;
+  color: var(--gray-400, #999);
+}
+.crypto-page-price-col {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.crypto-page-price {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--gray-800, #1e1e1e);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.crypto-page-change {
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+}
+.crypto-page-change--up { color: #16a34a; }
+.crypto-page-change--down { color: #dc2626; }
+.crypto-page-disclaimer {
+  text-align: center;
+  font-size: 0.6875rem;
+  color: var(--gray-400, #999);
+  padding: 24px 20px 40px;
+  line-height: 1.5;
+}
 
 /* ── Tabs (Transactions / Statements) ───────────────────────── */
 .db-tabs {
@@ -3026,6 +3303,194 @@ a { color: inherit; text-decoration: none; }
 }
 .tf-receipt-amt {
   color: #dc2626 !important;
+}
+
+/* ── Server Progress Bar (shared) ───────────────────────────── */
+.server-progress {
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+  text-align: center;
+}
+.server-progress-bar {
+  width: 100%;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.server-progress-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #00c853, #4cff88, #00c853);
+  background-size: 200% 100%;
+  animation: progressSlide 1.8s ease-in-out infinite;
+}
+@keyframes progressSlide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.server-progress-msg {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 500;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+/* Light theme progress */
+.login-screen .server-progress-bar,
+.db--light .server-progress-bar {
+  background: rgba(0,0,0,0.06);
+}
+.login-screen .server-progress-fill,
+.db--light .server-progress-fill {
+  background: linear-gradient(90deg, #008a00, #33a133, #008a00);
+  background-size: 200% 100%;
+}
+.login-screen .server-progress-msg {
+  color: rgba(255,255,255,0.8);
+}
+
+/* ── Server Spinner ─────────────────────────────────────────── */
+.server-spinner {
+  width: 48px; height: 48px;
+  border: 3px solid rgba(0,200,80,0.15);
+  border-top-color: #4cff88;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  margin: 0 auto 20px;
+}
+
+/* ── Transfer Loading Sheet ─────────────────────────────────── */
+.tf-loading-sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  text-align: center;
+  border-radius: var(--radius-xl);
+  animation: tfSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── OTP Security Modal ─────────────────────────────────────── */
+.otp-security-sheet {
+  text-align: center;
+  border-radius: var(--radius-xl);
+  animation: tfSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 400px;
+}
+.otp-security-icon {
+  color: #4cff88;
+  margin-bottom: 8px;
+}
+.otp-security-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0 0 8px;
+}
+.otp-security-desc {
+  font-size: 0.82rem;
+  color: var(--gray-400);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+.otp-security-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.otp-security-box {
+  width: 44px; height: 52px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(0,138,0,0.2);
+  background: rgba(0,138,0,0.04);
+  color: var(--gray-800);
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.otp-security-box:focus {
+  border-color: #00c853;
+  box-shadow: 0 0 0 3px rgba(0,200,83,0.15);
+}
+.otp-security-box--error {
+  border-color: #ff5252;
+  background: rgba(255,82,82,0.05);
+  animation: otpShake 0.4s ease;
+}
+@keyframes otpShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.otp-security-error {
+  color: #ff5252;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  background: rgba(255,82,82,0.08);
+  border: 1px solid rgba(255,82,82,0.15);
+  border-radius: 8px;
+}
+.tf-btn--ghost {
+  background: none;
+  border: 1px solid rgba(0,0,0,0.1);
+  color: var(--gray-400);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 0;
+  border-radius: var(--radius-md);
+  width: 100%;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+.tf-btn--ghost:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+/* Dark mode overrides for OTP security */
+.db:not(.db--light) .otp-security-icon { color: #00e676; }
+.db:not(.db--light) .otp-security-title { color: #e0ece0; }
+.db:not(.db--light) .otp-security-desc { color: rgba(255,255,255,0.5); }
+.db:not(.db--light) .otp-security-box {
+  background: rgba(0,40,0,0.3);
+  border-color: rgba(0,138,0,0.25);
+  color: #e0ece0;
+}
+.db:not(.db--light) .otp-security-box:focus {
+  border-color: #00e676;
+  box-shadow: 0 0 0 3px rgba(0,230,118,0.12);
+}
+.db:not(.db--light) .otp-security-error {
+  background: rgba(255,82,82,0.1);
+  border-color: rgba(255,82,82,0.2);
+}
+.db:not(.db--light) .tf-btn--ghost {
+  border-color: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5);
+}
+.db:not(.db--light) .tf-btn--ghost:hover {
+  background: rgba(255,255,255,0.05);
+}
+.db:not(.db--light) .server-progress-bar {
+  background: rgba(0,138,0,0.1);
+}
+.db:not(.db--light) .server-progress-msg {
+  color: rgba(255,255,255,0.6);
+}
+.db:not(.db--light) .server-spinner {
+  border-color: rgba(0,138,0,0.15);
+  border-top-color: #00e676;
 }
 
 /* ── Account Info overlay ───────────────────────────────────── */
@@ -4686,6 +5151,58 @@ button:active {
 .db--light .ad-badge--gold { background: rgba(180,130,0,.08); color: #8b6914; border-color: rgba(180,130,0,.15); }
 .db--light .ad-badge--green { background: rgba(0,138,0,.08); color: #006d00; border-color: rgba(0,138,0,.15); }
 
+/* ── Ad Banner clickable ───────────────────────────────────── */
+.ad-banner[role="button"] { cursor: pointer; }
+.ad-banner[role="button"]:active { transform: scale(0.98); transition: transform 0.15s ease; }
+
+/* ── Ad Toast ──────────────────────────────────────────────── */
+.ad-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #1a3a1a, #22522a);
+  border: 1px solid rgba(76,255,136,.25);
+  border-radius: 12px;
+  padding: 12px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  cursor: pointer;
+  animation: adToastIn 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes adToastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.ad-toast-icon {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(76,255,136,.15);
+  color: #4cff88;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.ad-toast-msg {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e0ece0;
+  white-space: nowrap;
+}
+.db--light .ad-toast {
+  background: linear-gradient(135deg, #f0f8f0, #e8f5e8);
+  border-color: rgba(0,138,0,.2);
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+}
+.db--light .ad-toast-icon { background: rgba(0,138,0,.1); color: #008a00; }
+.db--light .ad-toast-msg { color: #1a2e1a; }
+
 /* ── Email Sent Toast ──────────────────────────────────────── */
 .email-toast {
   position: fixed;
@@ -5903,6 +6420,33 @@ button:active {
 }
 .db:not(.db--light) .db-crypto-price {
   color: #e0ece0;
+}
+
+/* Crypto page dark mode */
+.db:not(.db--light) .crypto-page {
+  background: #0a1a0a;
+}
+.db:not(.db--light) .crypto-page-portfolio-label {
+  color: rgba(255,255,255,.5);
+}
+.db:not(.db--light) .crypto-page-portfolio-value {
+  color: #e0ece0;
+}
+.db:not(.db--light) .crypto-page-row {
+  background: rgba(0,40,0,.35);
+  border-color: rgba(0,138,0,.12);
+}
+.db:not(.db--light) .crypto-page-name {
+  color: #e0ece0;
+}
+.db:not(.db--light) .crypto-page-symbol {
+  color: rgba(255,255,255,.5);
+}
+.db:not(.db--light) .crypto-page-price {
+  color: #e0ece0;
+}
+.db:not(.db--light) .crypto-page-disclaimer {
+  color: rgba(255,255,255,.35);
 }
 
 /* Weekly spending chart */
