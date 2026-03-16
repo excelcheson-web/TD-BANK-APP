@@ -3721,12 +3721,12 @@ a { color: inherit; text-decoration: none; }
 /* Faded watermark logo behind card content */
 .bc-card-watermark {
   position: absolute;
-  right: -10%;
+  right: -5%;
   top: 50%;
   transform: translateY(-50%);
-  width: 65%;
+  width: 60%;
   height: auto;
-  opacity: 0.045;
+  opacity: 0.12;
   filter: brightness(0) invert(1);
   pointer-events: none;
   z-index: 0;
@@ -3792,7 +3792,7 @@ a { color: inherit; text-decoration: none; }
 }
 .bc-card-top {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   position: relative;
   z-index: 2;
