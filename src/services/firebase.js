@@ -13,7 +13,8 @@ import {
   doc,
   setDoc,
   getDoc,
-  updateDoc
+  updateDoc,
+  arrayUnion
 } from 'firebase/firestore'
 
 const firebaseConfig = {
@@ -119,4 +120,53 @@ export async function updateUserProfile(uid, fields) {
  */
 export function onAuthChange(callback) {
   return onAuthStateChanged(auth, callback)
+}
+
+/**
+ * Add a transaction to the user's Firestore history and update balance.
+ */
+export async function addTransaction(uid, txn, newBalance) {
+  await updateDoc(doc(db, 'users', uid), {
+    transferHistory: arrayUnion(txn),
+    balance: newBalance
+  })
+}
+
+/**
+ * Get the user's transfer history from Firestore.
+ */
+export async function getTransferHistory(uid) {
+  const snap = await getDoc(doc(db, 'users', uid))
+  if (!snap.exists()) return []
+  return snap.data().transferHistory || []
+}
+
+/**
+ * Sync local transfer history + balance to Firestore.
+ * Called after any transaction to keep the cloud in sync.
+ */
+export async function syncLocalToCloud() {
+  const user = auth.currentUser
+  if (!user) return
+  const history = JSON.parse(localStorage.getItem('transfer_history') || '[]')
+  const balance = parseFloat(localStorage.getItem('bank_balance') || '0')
+  await updateDoc(doc(db, 'users', user.uid), {
+    transferHistory: history,
+    balance
+  })
+}
+
+/**
+ * Pull transfer history + balance from Firestore into localStorage.
+ */
+export async function syncCloudToLocal(uid) {
+  const snap = await getDoc(doc(db, 'users', uid))
+  if (!snap.exists()) return
+  const data = snap.data()
+  if (data.transferHistory) {
+    localStorage.setItem('transfer_history', JSON.stringify(data.transferHistory))
+  }
+  if (data.balance !== undefined) {
+    localStorage.setItem('bank_balance', String(data.balance))
+  }
 }

@@ -4,7 +4,7 @@ import LoginScreen from './components/LoginScreen'
 import OnboardingFlow from './components/OnboardingFlow'
 import Dashboard from './components/Dashboard'
 import SecurityLock from './components/SecurityLock'
-import { registerUser, getUserProfile, onAuthChange } from './services/firebase'
+import { registerUser, getUserProfile, onAuthChange, syncCloudToLocal } from './services/firebase'
 
 export default function App() {
   const [booting, setBooting] = useState(true)
@@ -25,6 +25,8 @@ export default function App() {
           localStorage.setItem('user_email', profile.email)
           localStorage.setItem('user_name', profile.name)
           localStorage.setItem('bank_balance', String(profile.balance || 0))
+          // Pull transfer history from cloud
+          await syncCloudToLocal(firebaseUser.uid).catch(() => {})
         }
       } else {
         setUser(null)

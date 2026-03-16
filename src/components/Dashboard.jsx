@@ -16,7 +16,7 @@ import TransactionHistory from './TransactionHistory'
 import FinancialServices from './FinancialServices'
 import CryptoPage from './CryptoPage'
 import TDLogo from './TDLogo'
-import { updateUserProfile, logoutUser } from '../services/firebase'
+import { updateUserProfile, logoutUser, syncLocalToCloud, syncCloudToLocal } from '../services/firebase'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -333,10 +333,18 @@ export default function Dashboard({ user, onLogout }) {
     return () => window.removeEventListener('storage', onStorage)
   }, [checkNotifications, checkSysAlert])
 
-  // Sync balance to Firestore when it changes locally
+  // On mount: pull balance + transfer history from Firestore (cross-device sync)
+  useEffect(() => {
+    if (!user?.uid) return
+    syncCloudToLocal(user.uid).then(() => {
+      setBankBalance(parseFloat(localStorage.getItem('bank_balance') || '0'))
+    }).catch(() => {})
+  }, [user?.uid])
+
+  // Sync balance + history to Firestore when balance changes locally
   useEffect(() => {
     if (user?.uid && bankBalance !== undefined) {
-      updateUserProfile(user.uid, { balance: bankBalance }).catch(() => {})
+      syncLocalToCloud().catch(() => {})
     }
   }, [bankBalance, user?.uid])
 
