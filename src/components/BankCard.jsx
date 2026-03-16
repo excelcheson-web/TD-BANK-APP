@@ -102,6 +102,8 @@ export default function BankCard({ user, onClose }) {
         <div className={`bc-card ${frozen ? 'bc-card--frozen' : ''}`}>
           <div className="bc-card-shine" />
           <div className="bc-card-texture" />
+          {/* Faded background watermark logo */}
+          <img src="/td-logo.png" alt="" className="bc-card-watermark" draggable="false" />
           {/* Frozen watermark */}
           {frozen && <div className="bc-frozen-watermark">FROZEN</div>}
           {/* Top row: logo left, contactless right */}
