@@ -4,7 +4,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth'
 import {
   getFirestore,
@@ -23,9 +25,16 @@ const firebaseConfig = {
   appId: "1:10234950847:web:0b9561007e47ac3f4dc20a"
 }
 
+console.log('Firebase Config:', firebaseConfig.apiKey)
+
 const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
+
+// Keep user signed in across page refreshes
+setPersistence(auth, browserLocalPersistence).catch((err) =>
+  console.error('Firebase persistence error:', err)
+)
 
 /**
  * Register a new user with Firebase Auth + save profile to Firestore.
