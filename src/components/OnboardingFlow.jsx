@@ -161,6 +161,7 @@ export default function OnboardingFlow({ onComplete }) {
       pin: pinStr,
       biometric,
       accountNumber: generateAccountNumber(),
+      accountType,
     })
   }
 
@@ -250,26 +251,27 @@ export default function OnboardingFlow({ onComplete }) {
             ) : (
               <div className="ob-upload-placeholder">
                 <span style={{ fontSize: '1.5rem' }}>📷</span>
-          {/* ── Account Type Dropdown ───────────────────── */}
-          <div className="ob-field">
-            <label className="ob-label" htmlFor="ob-account-type">Account Type</label>
-            <select
-              id="ob-account-type"
-              className="ob-input"
-              value={accountType}
-              onChange={e => setAccountType(e.target.value)}
-            >
-              <option>Savings Account</option>
-              <option>Checking Account</option>
-              <option>Current Account</option>
-              <option>Fixed Deposit</option>
-            </select>
-          </div>
                 <span className="ob-upload-text">Upload Profile Photo</span>
                 <span className="ob-upload-hint">This will appear on your dashboard</span>
               </div>
             )}
           </div>
+        </div>
+
+        {/* ── Account Type Dropdown ───────────────────── */}
+        <div className="ob-field">
+          <label className="ob-label" htmlFor="ob-account-type">Account Type</label>
+          <select
+            id="ob-account-type"
+            className="ob-input"
+            value={accountType}
+            onChange={e => setAccountType(e.target.value)}
+          >
+            <option>Savings Account</option>
+            <option>Checking Account</option>
+            <option>Current Account</option>
+            <option>Fixed Deposit</option>
+          </select>
         </div>
       </div>
     )
