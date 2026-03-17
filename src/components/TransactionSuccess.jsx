@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { generateTransferPDF } from '../services/pdfReceipt'
 
 /* ── SVG icons ───────────────────────────────────────────── */
 const CheckCircle = () => (
@@ -78,7 +79,14 @@ export default function TransactionSuccess({
 
         {/* ── Green "Thank you" header ───────────────────── */}
         <div className="txn-success-header">
-          <button className="txn-download-btn" title="Download PDF">
+          <button className="txn-download-btn" title="Download PDF" onClick={() => generateTransferPDF({
+            type: type === 'International' ? 'international' : 'local',
+            ref: confirmation,
+            beneficiary: toName,
+            amount: parseFloat(String(amount).replace(/[^0-9.]/g, '')) || 0,
+            date: date || new Date().toISOString(),
+            senderName: fromName,
+          })}>
             <DownloadIcon />
             <span>PDF</span>
           </button>
