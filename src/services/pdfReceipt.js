@@ -6,6 +6,9 @@ const GRAY = [107, 114, 128]        // gray-500
 const LIGHT_GRAY = [229, 231, 235]  // gray-200
 const WHITE = [255, 255, 255]
 
+// TD logo as base64 PNG for PDF watermark
+const TD_LOGO_B64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEQAAAA8CAYAAADfYhweAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAPeSURBVHgB7ZpbaBNZGMf/M0lM0yZtbW1t1WLqbtdddYuLUnZhXdbt4gW8PAiKDyL44IMPIuqLiHhFEATxAj6JN3xRFAXxiljxChVRUKu00UJtjbWtTdI2aSczxzNFQQ7MOVNTSno8PxgG8n0zhB9zzvnmO6PVXpweISBhKEB06z+vfdIAHQpYJjQlgkEJYVBCGJQQBiWEQQlhUEIYlBAGJYTBywv69DHUmIZshNAjTQxYxMJwwhWyveYAphb+juyEwLDSiPV/QrSvBS+7nuFZRz2a4g0ZSeIKCfkKMdZfjGymNFCGqsLfMGfCPBBC0Nj9AuciJ3Cn7RoVQzBUpJpDNE3DL2NnYOvs/dhZcxjjAuMxVKSdVP8qm4tDc86gIlg5pOu4Qkw6RtOW4eqwiMm71WDc7b0cDzqJErgfBqWBcmyZtQ9BX8j1NVrtxWlv6TmMDFk4eRk2zdzlGN9dv5GO6+vIFI/uQUlOGWYUz8Li8HJML/pDeM3p10dx8tURYZ5JrLlejDAhXwHK8yoc4+97W5AwYo5xk3Zxon2tg8fdthtYNXUdVlStocWBc3mwJLwCl9+eRWd/O0SMuJCF4WVYO22TY3zP482oa70KN/SbKRxvOIgSOnnWTlrkmFfgL8K/E+fj/JvTwnuO+knVpHPTCTocetMJbt4/Exdwn6KvSLHK2MOs/sN9bk5lfhWK/CUQIc2y+yhax43nevMwOf9niJBGyOvu58Klfwp9SkRII6SrvwOJgTg3pzxvEkRII6TXSCDOWa5t7CVfhFSle4/RzY37PQGIkEpI0khy4z5dXHZJJcQgaW5c1zwQ8UO1EH+YwuwrXsFWtZtOmlRC/J5cbtwEv06xkUpIcAy/72GYAxAhjRCf7qONoHxuTl+6ByKkEVIRmkLnkBxuTnO8CSKkEVJNW4oiIvFXwhxphPxd/j833plqR7T3HURIIaS6eDZ+KviVm/Pk40PatedXsjajXoiXri7rq7cJ8269uwI3jGohOfTtde+fRxEWdMJaet7QJ+QB3DDiXXcRQW8QhbRL7oSH/uWSQCmqx9VgaeVKjM+dABHHGg653gDPOiEbZu7ABuzAcFHXeg332m66zpf6bfdF11Pse7JlSNdIK+RmyyVsvLcahiV+f/mWrBsymdBBa42H0du4EDlFJ9JmfA/DJiQ20EVL40bHeM+XnTX7ix9enhss+hqfSqcGm8qdyQ9oTkTQGHuJplgD/T2Z0b2HbfdfBuzdf/UVIoMSwqCEMCghDEoIgxLCoIQwKCEMSgiDEsKghDB4QYhBN8VTUEDXNeszRHR3nfb4ZSEAAAAASUVORK5CYII='
+
 function formatCurrency(n) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
@@ -39,6 +42,16 @@ export function generateTransferPDF(txn) {
   const margin = 20
   const contentW = pageW - margin * 2
   const isIntl = txn.type === 'international'
+
+  // ── Centered watermark logo (faint, behind content) ────
+  const logoW = 60
+  const logoH = 53  // maintain 68:60 aspect ratio
+  const logoX = (pageW - logoW) / 2
+  const logoY = (pageH - logoH) / 2
+  doc.saveGraphicsState()
+  doc.setGState(new doc.GState({ opacity: 0.06 }))
+  doc.addImage(TD_LOGO_B64, 'PNG', logoX, logoY, logoW, logoH)
+  doc.restoreGraphicsState()
 
   // ── Green header bar ──────────────────────────────────
   doc.setFillColor(...TD_GREEN)
