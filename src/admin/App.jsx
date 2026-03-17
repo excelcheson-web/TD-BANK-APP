@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { auth, db, updateUserProfile } from '../services/firebase'
 import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore'
+import { onAuthStateChanged } from 'firebase/auth'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -34,9 +35,12 @@ function getUser() {
 
 function getUid() {
   if (auth.currentUser?.uid) return auth.currentUser.uid
+  if (_trackedUid) return _trackedUid
   const u = getUser()
   return u?.uid || null
 }
+
+let _trackedUid = null
 
 function saveUser(user) {
   localStorage.setItem(USER_KEY, JSON.stringify(user))
@@ -140,6 +144,14 @@ function generateRandomTxn(monthsBack) {
 // COMPONENT
 // ─────────────────────────────────────────────────────────────
 export default function AdminApp() {
+  // Track Firebase auth state so uid is reliably available
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      _trackedUid = firebaseUser?.uid || null
+    })
+    return () => unsub()
+  }, [])
+
   const [form, setForm] = useState({
     balance: '',
     lastTxnAmount: '',
@@ -467,31 +479,67 @@ export default function AdminApp() {
   }
 
   // ── Profile picture ──
+  const compressImage = (dataUrl, maxWidth = 300) => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const scale = Math.min(1, maxWidth / img.width)
+        canvas.width = img.width * scale
+        canvas.height = img.height * scale
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', 0.7))
+      }
+      img.onerror = () => resolve(dataUrl)
+      img.src = dataUrl
+    })
+  }
+
   const handlePicUpload = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = (ev) => {
-      const dataUrl = ev.target.result
+    reader.onload = async (ev) => {
+      const raw = ev.target.result
+      const dataUrl = await compressImage(raw)
       setProfilePic(dataUrl)
       const user = getUser() || {}
       user.profilePic = dataUrl
       saveUser(user)
       const uid = getUid()
-      if (uid) updateUserProfile(uid, { profilePic: dataUrl }).catch(() => {})
-      showStatus('success', 'Profile picture updated.')
+      if (uid) {
+        try {
+          await updateUserProfile(uid, { profilePic: dataUrl })
+          showStatus('success', 'Profile picture updated and synced.')
+        } catch (err) {
+          console.error('Profile pic Firestore write failed:', err)
+          showStatus('error', 'Picture saved locally but Firestore sync failed.')
+        }
+      } else {
+        showStatus('error', 'No user ID found — picture saved locally only.')
+      }
     }
     reader.readAsDataURL(file)
   }
 
-  const removePic = () => {
+  const removePic = async () => {
     setProfilePic('')
     const user = getUser() || {}
     user.profilePic = ''
     saveUser(user)
     const uid = getUid()
-    if (uid) updateUserProfile(uid, { profilePic: '' }).catch(() => {})
-    showStatus('success', 'Profile picture removed.')
+    if (uid) {
+      try {
+        await updateUserProfile(uid, { profilePic: '' })
+        showStatus('success', 'Profile picture removed.')
+      } catch (err) {
+        console.error('Profile pic removal failed:', err)
+        showStatus('error', 'Removed locally but Firestore sync failed.')
+      }
+    } else {
+      showStatus('error', 'No user ID found — removed locally only.')
+    }
   }
 
   // ── Block transfers ──

@@ -2484,19 +2484,33 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
 }
 
-/* ── Watermark logo behind receipt ──────────────────────────── */
+/* ── Watermark logo behind receipt (pseudo-element approach) ── */
+.txn-success-body::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 220px;
+  height: 220px;
+  background: url('/td-logo.png') center / contain no-repeat;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* Legacy img watermark (kept for fallback) */
 .txn-receipt-watermark {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 200px;
-  height: 200px;
+  width: 220px;
+  height: 220px;
   object-fit: contain;
   opacity: 0.1;
   pointer-events: none;
   user-select: none;
-  z-index: -1;
+  z-index: 0;
 }
 .txn-success-body .txn-row,
 .txn-success-body .txn-divider {
