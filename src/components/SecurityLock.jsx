@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import TDLogo from './TDLogo'
 
-const IDLE_TIMEOUT = 60000 // 60 seconds
+const IDLE_TIMEOUT = 60000          // 60 seconds → PIN lock
+const RELOGIN_TIMEOUT = 30 * 60000  // 30 minutes → full re-login
 
-export default function SecurityLock({ children }) {
+export default function SecurityLock({ children, onForceLogout }) {
   const [locked, setLocked] = useState(false)
   const [pin, setPin] = useState(['', '', '', '', '', ''])
   const [error, setError] = useState('')
   const [shake, setShake] = useState(false)
   const timerRef = useRef(null)
+  const reloginTimerRef = useRef(null)
   const pinRefs = useRef([])
 
   const getStoredPin = () => {
@@ -21,8 +23,12 @@ export default function SecurityLock({ children }) {
   const resetTimer = useCallback(() => {
     if (!getStoredPin()) return // no pin set, skip locking
     clearTimeout(timerRef.current)
+    clearTimeout(reloginTimerRef.current)
     timerRef.current = setTimeout(() => setLocked(true), IDLE_TIMEOUT)
-  }, [])
+    reloginTimerRef.current = setTimeout(() => {
+      if (onForceLogout) onForceLogout()
+    }, RELOGIN_TIMEOUT)
+  }, [onForceLogout])
 
   useEffect(() => {
     if (!getStoredPin()) return
@@ -32,6 +38,7 @@ export default function SecurityLock({ children }) {
     return () => {
       events.forEach((e) => window.removeEventListener(e, resetTimer))
       clearTimeout(timerRef.current)
+      clearTimeout(reloginTimerRef.current)
     }
   }, [resetTimer])
 

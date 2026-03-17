@@ -4,7 +4,7 @@ import LoginScreen from './components/LoginScreen'
 import OnboardingFlow from './components/OnboardingFlow'
 import Dashboard from './components/Dashboard'
 import SecurityLock from './components/SecurityLock'
-import { registerUser, getUserProfile, onAuthChange, subscribeToUserDoc } from './services/firebase'
+import { registerUser, getUserProfile, onAuthChange, subscribeToUserDoc, logoutUser } from './services/firebase'
 
 export default function App() {
   const [booting, setBooting] = useState(true)
@@ -92,8 +92,13 @@ export default function App() {
     )
   }
 
+  const handleForceLogout = async () => {
+    await logoutUser()
+    setUser(null)
+  }
+
   return (
-    <SecurityLock>
+    <SecurityLock onForceLogout={handleForceLogout}>
       <Dashboard user={user} onLogout={() => setUser(null)} />
     </SecurityLock>
   )

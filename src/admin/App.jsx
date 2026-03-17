@@ -32,6 +32,12 @@ function getUser() {
   } catch { return null }
 }
 
+function getUid() {
+  if (auth.currentUser?.uid) return auth.currentUser.uid
+  const u = getUser()
+  return u?.uid || null
+}
+
 function saveUser(user) {
   localStorage.setItem(USER_KEY, JSON.stringify(user))
   window.dispatchEvent(new StorageEvent('storage', {
@@ -293,6 +299,14 @@ export default function AdminApp() {
     localStorage.setItem('bank_balance', String(numericBal))
     window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY, newValue: JSON.stringify(payload) }))
     window.dispatchEvent(new StorageEvent('storage', { key: 'bank_balance', newValue: String(numericBal) }))
+    // Push profilePic + balance + accountType to Firestore
+    const uid = getUid()
+    if (uid) {
+      const fields = { balance: numericBal }
+      if (profilePic !== undefined) fields.profilePic = profilePic
+      if (form.accountType) fields.accountType = form.accountType
+      updateUserProfile(uid, fields).catch(() => {})
+    }
     setLastSync(now)
     setSynced(true)
     setTimeout(() => setSynced(false), 2500)
@@ -463,8 +477,7 @@ export default function AdminApp() {
       const user = getUser() || {}
       user.profilePic = dataUrl
       saveUser(user)
-      // Push to Firestore for cross-device sync
-      const uid = auth.currentUser?.uid
+      const uid = getUid()
       if (uid) updateUserProfile(uid, { profilePic: dataUrl }).catch(() => {})
       showStatus('success', 'Profile picture updated.')
     }
@@ -476,8 +489,7 @@ export default function AdminApp() {
     const user = getUser() || {}
     user.profilePic = ''
     saveUser(user)
-    // Push to Firestore for cross-device sync
-    const uid = auth.currentUser?.uid
+    const uid = getUid()
     if (uid) updateUserProfile(uid, { profilePic: '' }).catch(() => {})
     showStatus('success', 'Profile picture removed.')
   }

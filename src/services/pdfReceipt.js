@@ -4,7 +4,6 @@ const TD_GREEN = [0, 138, 0]       // #008a00
 const DARK = [31, 41, 55]           // gray-800
 const GRAY = [107, 114, 128]        // gray-500
 const LIGHT_GRAY = [229, 231, 235]  // gray-200
-const RED = [220, 38, 38]           // debit red
 const WHITE = [255, 255, 255]
 
 function formatCurrency(n) {
@@ -25,7 +24,7 @@ function formatDate(iso) {
  * @param {string} txn.ref
  * @param {string} txn.beneficiary
  * @param {number} txn.amount
- * @param {number} txn.balanceAfter
+ * @param {number} [txn.balanceAfter]
  * @param {string} txn.date - ISO date string
  * @param {string} [txn.iban]
  * @param {string} [txn.swift]
@@ -112,11 +111,7 @@ export function generateTransferPDF(txn) {
     doc.text(label, margin + 4, y + 2)
 
     doc.setFont('helvetica', 'bold')
-    if (opts.red) {
-      doc.setTextColor(...RED)
-    } else {
-      doc.setTextColor(...DARK)
-    }
+    doc.setTextColor(...DARK)
     doc.text(String(value), pageW - margin - 4, y + 2, { align: 'right' })
     y += 11
   }
@@ -137,7 +132,7 @@ export function generateTransferPDF(txn) {
     drawRow('Bank Name', txn.bankName || '—')
   }
 
-  drawRow('Transfer Amount', `-$${formatCurrency(txn.amount)}`, { red: true, bg: true })
+  drawRow('Transfer Amount', `$${formatCurrency(txn.amount)}`, { bg: true })
 
   // ── Status badge ──────────────────────────────────────
   y += 6
@@ -160,21 +155,23 @@ export function generateTransferPDF(txn) {
   doc.setLineWidth(0.3)
   doc.line(margin, y, pageW - margin, y)
 
-  // ── Important Notice ──────────────────────────────────
-  y += 10
-  doc.setFillColor(255, 251, 235)
-  doc.roundedRect(margin, y - 4, contentW, 20, 3, 3, 'F')
-  doc.setFontSize(8)
-  doc.setTextColor(161, 98, 7)
-  doc.setFont('helvetica', 'bold')
-  doc.text('Important Notice', margin + 6, y + 2)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7.5)
-  doc.text(
-    'International wire transfers may take 1-3 business days to process. Fees may apply based on your account type.',
-    margin + 6, y + 9,
-    { maxWidth: contentW - 12 }
-  )
+  // ── Important Notice (international only) ──────────────
+  if (isIntl) {
+    y += 10
+    doc.setFillColor(255, 251, 235)
+    doc.roundedRect(margin, y - 4, contentW, 20, 3, 3, 'F')
+    doc.setFontSize(8)
+    doc.setTextColor(161, 98, 7)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Important Notice', margin + 6, y + 2)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.text(
+      'International wire transfers may take 1-3 business days to process. Fees may apply based on your account type.',
+      margin + 6, y + 9,
+      { maxWidth: contentW - 12 }
+    )
+  }
 
   // ── Footer ────────────────────────────────────────────
   const footerY = pageH - 28
