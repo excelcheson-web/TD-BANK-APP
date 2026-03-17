@@ -138,7 +138,6 @@ export function generateTransferPDF(txn) {
   }
 
   drawRow('Transfer Amount', `-$${formatCurrency(txn.amount)}`, { red: true, bg: true })
-  drawRow('Balance After Transaction', `$${formatCurrency(txn.balanceAfter)}`)
 
   // ── Status badge ──────────────────────────────────────
   y += 6

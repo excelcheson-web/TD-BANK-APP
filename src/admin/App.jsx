@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
-import { auth, updateUserProfile } from '../services/firebase'
+import { useState, useEffect, useCallback } from 'react'
+import { auth, db, updateUserProfile } from '../services/firebase'
+import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -164,23 +165,103 @@ export default function AdminApp() {
   const [alertMsg, setAlertMsg] = useState('')
   const [alertSent, setAlertSent] = useState(false)
 
+  // Sidebar navigation
+  const [activeSection, setActiveSection] = useState('user-mgmt')
+
+  // Loading states for buttons
+  const [loadingBtn, setLoadingBtn] = useState(null)
+
+  // Toast notifications
+  const [toast, setToast] = useState(null)
+
+  // Fund Transfer tool (Module 4)
+  const [allUsers, setAllUsers] = useState([])
+  const [selectedUserId, setSelectedUserId] = useState('')
+  const [fundDirection, setFundDirection] = useState('main-to-vault')
+  const [fundAmount, setFundAmount] = useState('')
+  const [fundLoading, setFundLoading] = useState(false)
+  const [usersLoading, setUsersLoading] = useState(false)
+
+  const showToast = useCallback((type, message) => {
+    setToast({ type, message })
+    setTimeout(() => setToast(null), 4000)
+  }, [])
+
+  const withLoading = useCallback(async (btnId, fn) => {
+    setLoadingBtn(btnId)
+    try {
+      await fn()
+    } finally {
+      setLoadingBtn(null)
+    }
+  }, [])
+
   const broadcastAlert = () => {
     if (!alertMsg.trim()) return
     const payload = JSON.stringify({ id: Date.now(), message: alertMsg.trim(), timestamp: new Date().toLocaleString() })
     localStorage.setItem('system_notification', payload)
     window.dispatchEvent(new StorageEvent('storage', { key: 'system_notification', newValue: payload }))
     setAlertSent(true)
+    showToast('success', 'System alert broadcasted to user dashboard.')
     setTimeout(() => setAlertSent(false), 3000)
   }
 
   const clearAlert = () => {
     localStorage.removeItem('system_notification')
     setAlertMsg('')
-    showStatus('success', 'System alert cleared.')
+    showToast('success', 'System alert cleared.')
   }
 
   // Block transfers
   const BLOCK_MSG = 'TD Bank has temporarily suspended transfer activities from this account due to suspicious activity detected during routine security monitoring. Please contact customer support or visit the nearest branch to verify your account and restore full access.'
+
+  // ── Fetch all users from Firestore for Fund Transfer ──
+  const fetchAllUsers = useCallback(async () => {
+    setUsersLoading(true)
+    try {
+      const snap = await getDocs(collection(db, 'users'))
+      const users = []
+      snap.forEach((d) => users.push({ uid: d.id, ...d.data() }))
+      setAllUsers(users)
+    } catch (err) {
+      showToast('error', 'Failed to load users: ' + err.message)
+    } finally {
+      setUsersLoading(false)
+    }
+  }, [showToast])
+
+  // ── Fund Transfer: Move between Main Balance and Savings Vault ──
+  const handleFundTransfer = async () => {
+    if (!selectedUserId) { showToast('error', 'Please select a user.'); return }
+    const amt = parseFloat(fundAmount.replace(/,/g, ''))
+    if (isNaN(amt) || amt <= 0) { showToast('error', 'Enter a valid amount.'); return }
+
+    setFundLoading(true)
+    try {
+      const userRef = doc(db, 'users', selectedUserId)
+      const snap = await getDoc(userRef)
+      if (!snap.exists()) { showToast('error', 'User not found.'); return }
+      const data = snap.data()
+      const mainBal = data.balance || 0
+      const vaultBal = data.savingsVault || 0
+
+      if (fundDirection === 'main-to-vault') {
+        if (amt > mainBal) { showToast('error', 'Insufficient main balance.'); setFundLoading(false); return }
+        await updateDoc(userRef, { balance: mainBal - amt, savingsVault: vaultBal + amt })
+        showToast('success', `Moved $${formatBalance(amt)} from Main → Savings Vault`)
+      } else {
+        if (amt > vaultBal) { showToast('error', 'Insufficient vault balance.'); setFundLoading(false); return }
+        await updateDoc(userRef, { balance: mainBal + amt, savingsVault: vaultBal - amt })
+        showToast('success', `Moved $${formatBalance(amt)} from Savings Vault → Main`)
+      }
+      setFundAmount('')
+      fetchAllUsers()
+    } catch (err) {
+      showToast('error', 'Transfer failed: ' + err.message)
+    } finally {
+      setFundLoading(false)
+    }
+  }
 
   // Load
   useEffect(() => {
@@ -200,8 +281,7 @@ export default function AdminApp() {
   }
 
   const showStatus = (type, message) => {
-    setActionStatus({ type, message })
-    setTimeout(() => setActionStatus(null), 4000)
+    showToast(type, message)
   }
 
   // ── Sync ──
@@ -426,430 +506,546 @@ export default function AdminApp() {
   }
 
   return (
-    <div className="admin-shell">
-      {/* ── Header ──────────────────────────────────────── */}
-      <header className="admin-header bg-admin">
-        <div className="admin-header-inner">
-          <div>
-            <h1 className="admin-title">Admin Portal</h1>
-            <p className="admin-subtitle">Control Panel</p>
-          </div>
-          <div className="admin-badge">🔒</div>
+    <div className="admin-shell admin-shell--sidebar">
+      {/* ── Toast notification ──────────────────────────── */}
+      {toast && (
+        <div className={`admin-toast admin-toast--${toast.type}`} onClick={() => setToast(null)}>
+          <span className="admin-toast-icon">{toast.type === 'success' ? '✅' : '⚠️'}</span>
+          <span className="admin-toast-msg">{toast.message}</span>
         </div>
-      </header>
+      )}
 
-      <main className="admin-main">
-        {/* ── Sync status bar ───────────────────────────── */}
-        {lastSync && (
-          <div className="admin-sync-bar">
-            Last synced: <strong>{lastSync}</strong>
-          </div>
-        )}
-
-        {/* ── Global status message ─────────────────────── */}
-        {actionStatus && (
-          <div className={`admin-alert admin-alert--${actionStatus.type === 'success' ? 'success' : 'warn'}`} style={{ margin: '0 0 12px' }}>
-            {actionStatus.type === 'success' ? '✅' : '⚠️'} {actionStatus.message}
-          </div>
-        )}
-
-        {/* ── Account Controls ──────────────────────────── */}
-        <section className="admin-section">
-          <h2 className="admin-section-title">
-            <span className="admin-section-icon">💰</span>
-            Account Controls
-          </h2>
-          <div className="admin-card">
-            <label className="admin-label" htmlFor="balance">Current Balance ($)</label>
-            <input id="balance" className="admin-input" type="text" inputMode="decimal"
-              placeholder="e.g. 1,490,000.00" value={form.balance}
-              onChange={(e) => update('balance', e.target.value)} />
-
-            {/* Account Type Dropdown */}
-            <label className="admin-label" htmlFor="accountType">Account Type</label>
-            <select
-              id="accountType"
-              className="admin-input"
-              value={form.accountType || 'Savings Account'}
-              onChange={e => {
-                update('accountType', e.target.value);
-                localStorage.setItem('user_account_type', e.target.value);
-                // Also update user object if exists
-                try {
-                  const user = JSON.parse(localStorage.getItem('securebank_user') || '{}');
-                  user.accountType = e.target.value;
-                  localStorage.setItem('securebank_user', JSON.stringify(user));
-                } catch {}
-              }}
+      {/* ── Sidebar Navigation ─────────────────────────── */}
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-logo">
+          <img src="/td-logo.png" alt="TD" className="admin-sidebar-logo-img" />
+          <span className="admin-sidebar-logo-text">Admin</span>
+        </div>
+        <nav className="admin-sidebar-nav">
+          {[
+            { id: 'user-mgmt', icon: '👤', label: 'User Management' },
+            { id: 'txn-approval', icon: '✅', label: 'Transaction Approval' },
+            { id: 'vault-controls', icon: '🔐', label: 'Vault Controls' },
+            { id: 'fund-transfer', icon: '💸', label: 'Fund Transfer' },
+            { id: 'system', icon: '📢', label: 'System Alerts' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              className={`admin-sidebar-btn ${activeSection === item.id ? 'admin-sidebar-btn--active' : ''}`}
+              onClick={() => setActiveSection(item.id)}
             >
-              <option>Savings Account</option>
-              <option>Checking Account</option>
-              <option>Current Account</option>
-              <option>Fixed Deposit</option>
-            </select>
-
-            <label className="admin-label" htmlFor="lastTxn">Last Transaction Amount ($)</label>
-            <input id="lastTxn" className="admin-input" type="text" inputMode="decimal"
-              placeholder="e.g. 5,000.00" value={form.lastTxnAmount}
-              onChange={(e) => update('lastTxnAmount', e.target.value)} />
-
-            <label className="admin-label" htmlFor="receiver">Receiver Name</label>
-            <input id="receiver" className="admin-input" type="text" placeholder="e.g. Weicheng"
-              value={form.receiverName}
-              onChange={(e) => update('receiverName', e.target.value)} />
-
-            <label className="admin-label" htmlFor="txnDate">Transaction Date</label>
-            <input id="txnDate" className="admin-input" type="date" value={form.txnDate}
-              onChange={(e) => update('txnDate', e.target.value)} />
+              <span className="admin-sidebar-btn-icon">{item.icon}</span>
+              <span className="admin-sidebar-btn-label">{item.label}</span>
+            </button>
+          ))}
+        </nav>
+        {lastSync && (
+          <div className="admin-sidebar-sync">
+            Synced: {lastSync}
           </div>
-        </section>
+        )}
+      </aside>
 
-        {/* ════════════════════════════════════════════════════
-            CUSTOMER MANAGEMENT
-            ════════════════════════════════════════════════════ */}
-        <section className="admin-section">
-          <h2 className="admin-section-title">
-            <span className="admin-section-icon">👤</span>
-            Customer Management
-          </h2>
-
-          {/* ── Manual Credit ─────────────────────────────── */}
-          <div className="admin-card">
-            <h3 className="admin-card-title">Manual Credit</h3>
-            <div className="adm-credit-row">
-              <input
-                className="admin-input"
-                type="text"
-                inputMode="decimal"
-                placeholder="Amount to credit ($)"
-                value={creditAmount}
-                onChange={(e) => setCreditAmount(e.target.value)}
-              />
-              <button className="admin-action-btn admin-action-btn--credit adm-credit-btn" onClick={handleCredit}>
-                <span className="admin-action-icon">↓</span> Credit Account
-              </button>
+      {/* ── Main Content ──────────────────────────────── */}
+      <div className="admin-content">
+        <header className="admin-header bg-admin">
+          <div className="admin-header-inner">
+            <div>
+              <h1 className="admin-title">
+                {activeSection === 'user-mgmt' && 'User Management'}
+                {activeSection === 'txn-approval' && 'Transaction Approval'}
+                {activeSection === 'vault-controls' && 'Vault Controls'}
+                {activeSection === 'fund-transfer' && 'Fund Transfer'}
+                {activeSection === 'system' && 'System Alerts'}
+              </h1>
+              <p className="admin-subtitle">TD Bank Admin Portal</p>
             </div>
+            <div className="admin-badge">🔒</div>
           </div>
+        </header>
 
-          {/* ── Profile Picture ──────────────────────────── */}
-          <div className="admin-card">
-            <h3 className="admin-card-title">Profile Picture</h3>
-            <div className="adm-pic-row">
-              <div className="adm-pic-preview">
-                {profilePic
-                  ? <img src={profilePic} alt="Profile" className="adm-pic-img" />
-                  : <span className="adm-pic-placeholder">👤</span>}
-              </div>
-              <div className="adm-pic-actions">
-                <label className="adm-pic-btn" style={{ display: 'inline-block', textAlign: 'center', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}>
-                  📷 Upload New Photo
-                  <input type="file" accept="image/*"
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
-                    onChange={handlePicUpload} />
-                </label>
-                {profilePic && (
-                  <button className="adm-pic-btn adm-pic-btn--danger" onClick={removePic}>
-                    🗑 Remove Photo
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+        <main className="admin-main">
+          {/* ════════════════════════════════════════════════
+              USER MANAGEMENT
+              ════════════════════════════════════════════════ */}
+          {activeSection === 'user-mgmt' && (
+            <>
+              {/* Account Controls */}
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  <span className="admin-section-icon">💰</span>
+                  Account Controls
+                </h2>
+                <div className="admin-card">
+                  <label className="admin-label" htmlFor="balance">Current Balance ($)</label>
+                  <input id="balance" className="admin-input" type="text" inputMode="decimal"
+                    placeholder="e.g. 1,490,000.00" value={form.balance}
+                    onChange={(e) => update('balance', e.target.value)} />
 
-          {/* ── Transaction Logs ──────────────────────────── */}
-          <div className="admin-card">
-            <div className="adm-txlog-header">
-              <h3 className="admin-card-title">Transaction Logs</h3>
-              {history.length > 0 && (
-                <button className="adm-txlog-clear" onClick={clearAllHistory}>🗑 Clear All</button>
-              )}
-            </div>
+                  <label className="admin-label" htmlFor="accountType">Account Type</label>
+                  <select id="accountType" className="admin-input"
+                    value={form.accountType || 'Savings Account'}
+                    onChange={e => {
+                      update('accountType', e.target.value)
+                      localStorage.setItem('user_account_type', e.target.value)
+                      try {
+                        const user = JSON.parse(localStorage.getItem('securebank_user') || '{}')
+                        user.accountType = e.target.value
+                        localStorage.setItem('securebank_user', JSON.stringify(user))
+                      } catch {}
+                    }}>
+                    <option>Savings Account</option>
+                    <option>Checking Account</option>
+                    <option>Current Account</option>
+                    <option>Fixed Deposit</option>
+                  </select>
 
-            {history.length === 0 ? (
-              <p className="adm-txlog-empty">No transactions recorded.</p>
-            ) : (
-              <div className="adm-txlog-table-wrap">
-                <table className="adm-txlog-table">
-                  <thead>
-                    <tr>
-                      <th>Ref</th>
-                      <th>Type</th>
-                      <th>Beneficiary</th>
-                      <th>Amount</th>
-                      <th>Date</th>
-                      <th>Bank</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {history.map((txn) => (
-                      editingTxn === txn.id ? (
-                        <tr key={txn.id} className="adm-txlog-edit-row">
-                          <td><input className="adm-txlog-input" value={editForm.ref || ''} onChange={(e) => setEditForm(p => ({ ...p, ref: e.target.value }))} /></td>
-                          <td>
-                            <select className="adm-txlog-input" value={editForm.type || 'local'} onChange={(e) => setEditForm(p => ({ ...p, type: e.target.value }))}>
-                              <option value="local">Local</option>
-                              <option value="international">International</option>
-                            </select>
-                          </td>
-                          <td><input className="adm-txlog-input" value={editForm.beneficiary || ''} onChange={(e) => setEditForm(p => ({ ...p, beneficiary: e.target.value }))} /></td>
-                          <td><input className="adm-txlog-input" type="text" value={editForm.amount || ''} onChange={(e) => setEditForm(p => ({ ...p, amount: e.target.value }))} /></td>
-                          <td><input className="adm-txlog-input" type="datetime-local" value={editForm.date ? editForm.date.slice(0, 16) : ''} onChange={(e) => setEditForm(p => ({ ...p, date: new Date(e.target.value).toISOString() }))} /></td>
-                          <td><input className="adm-txlog-input" value={editForm.bankName || ''} onChange={(e) => setEditForm(p => ({ ...p, bankName: e.target.value }))} /></td>
-                          <td className="adm-txlog-actions">
-                            <button className="adm-txlog-btn adm-txlog-btn--save" onClick={saveEdit}>Save</button>
-                            <button className="adm-txlog-btn" onClick={() => setEditingTxn(null)}>Cancel</button>
-                          </td>
-                        </tr>
-                      ) : (
-                        <tr key={txn.id}>
-                          <td className="font-mono">{txn.ref}</td>
-                          <td><span className={`adm-txlog-badge adm-txlog-badge--${txn.type}`}>{txn.type === 'international' ? '🌐 Intl' : '⚡ Local'}</span></td>
-                          <td>{txn.beneficiary}</td>
-                          <td className="adm-txlog-amt">${formatBalance(txn.amount)}</td>
-                          <td>{new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                          <td>{txn.bankName}</td>
-                          <td className="adm-txlog-actions">
-                            <button className="adm-txlog-btn" onClick={() => startEdit(txn)}>✏️</button>
-                            <button className="adm-txlog-btn adm-txlog-btn--del" onClick={() => deleteTxn(txn.id)}>🗑</button>
-                          </td>
-                        </tr>
-                      )
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                  <label className="admin-label" htmlFor="lastTxn">Last Transaction Amount ($)</label>
+                  <input id="lastTxn" className="admin-input" type="text" inputMode="decimal"
+                    placeholder="e.g. 5,000.00" value={form.lastTxnAmount}
+                    onChange={(e) => update('lastTxnAmount', e.target.value)} />
 
-          {/* ── Bulk Transaction Generator ────────────────── */}
-          <div className="admin-card">
-            <h3 className="admin-card-title">Bulk Transaction Generator</h3>
-            <p className="adm-bulk-desc">Generate multiple realistic transactions with random dates, names, accounts, and countries. Review and edit before saving.</p>
+                  <label className="admin-label" htmlFor="receiver">Receiver Name</label>
+                  <input id="receiver" className="admin-input" type="text" placeholder="e.g. Weicheng"
+                    value={form.receiverName}
+                    onChange={(e) => update('receiverName', e.target.value)} />
 
-            <div className="adm-bulk-controls">
-              <div className="adm-bulk-field">
-                <label className="admin-label">Number of Transactions</label>
-                <input className="admin-input" type="number" min="1" max="200" value={bulkCount}
-                  onChange={(e) => setBulkCount(Math.min(200, Math.max(1, parseInt(e.target.value) || 1)))} />
-              </div>
-              <div className="adm-bulk-field">
-                <label className="admin-label">Date Range (months back)</label>
-                <input className="admin-input" type="number" min="1" max="60" value={bulkMonths}
-                  onChange={(e) => setBulkMonths(Math.min(60, Math.max(1, parseInt(e.target.value) || 1)))} />
-              </div>
-              <button className="admin-action-btn admin-action-btn--credit" onClick={generateBulk}>
-                ⚡ Generate Preview
-              </button>
-            </div>
+                  <label className="admin-label" htmlFor="txnDate">Transaction Date</label>
+                  <input id="txnDate" className="admin-input" type="date" value={form.txnDate}
+                    onChange={(e) => update('txnDate', e.target.value)} />
+                </div>
+              </section>
 
-            {bulkPreview.length > 0 && (
-              <div className="adm-bulk-preview">
-                <div className="adm-bulk-preview-header">
-                  <span className="adm-bulk-count">{bulkPreview.length} transactions ready</span>
-                  <div>
-                    <button className="adm-txlog-btn adm-txlog-btn--save" onClick={confirmBulk}>
-                      ✓ Add All to History
-                    </button>
-                    <button className="adm-txlog-btn" onClick={() => setBulkPreview([])} style={{ marginLeft: 8 }}>
-                      ✕ Discard
+              {/* Manual Credit */}
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  <span className="admin-section-icon">💳</span>
+                  Manual Credit
+                </h2>
+                <div className="admin-card">
+                  <div className="adm-credit-row">
+                    <input className="admin-input" type="text" inputMode="decimal"
+                      placeholder="Amount to credit ($)" value={creditAmount}
+                      onChange={(e) => setCreditAmount(e.target.value)} />
+                    <button
+                      className="admin-action-btn admin-action-btn--credit adm-credit-btn"
+                      disabled={loadingBtn === 'credit'}
+                      onClick={() => withLoading('credit', handleCredit)}
+                    >
+                      {loadingBtn === 'credit' ? <span className="admin-btn-spinner" /> : <><span className="admin-action-icon">↓</span> Credit Account</>}
                     </button>
                   </div>
                 </div>
+              </section>
 
-                <div className="adm-txlog-table-wrap">
-                  <table className="adm-txlog-table">
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>Type</th>
-                        <th>Beneficiary</th>
-                        <th>Amount</th>
-                        <th>Date</th>
-                        <th>Bank</th>
-                        <th>Country</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bulkPreview.map((txn, idx) => (
-                        bulkEditIdx === idx ? (
-                          <tr key={idx} className="adm-txlog-edit-row">
-                            <td>{idx + 1}</td>
-                            <td>
-                              <select className="adm-txlog-input" value={txn.type}
-                                onChange={(e) => updateBulkItem(idx, 'type', e.target.value)}>
-                                <option value="local">Local</option>
-                                <option value="international">International</option>
-                              </select>
-                            </td>
-                            <td><input className="adm-txlog-input" value={txn.beneficiary}
-                              onChange={(e) => updateBulkItem(idx, 'beneficiary', e.target.value)} /></td>
-                            <td><input className="adm-txlog-input" type="text" value={txn.amount}
-                              onChange={(e) => updateBulkItem(idx, 'amount', e.target.value)} /></td>
-                            <td><input className="adm-txlog-input" type="datetime-local"
-                              value={txn.date.slice(0, 16)}
-                              onChange={(e) => updateBulkItem(idx, 'date', new Date(e.target.value).toISOString())} /></td>
-                            <td><input className="adm-txlog-input" value={txn.bankName}
-                              onChange={(e) => updateBulkItem(idx, 'bankName', e.target.value)} /></td>
-                            <td><input className="adm-txlog-input" value={txn.country || 'N/A'}
-                              onChange={(e) => updateBulkItem(idx, 'country', e.target.value)} /></td>
-                            <td className="adm-txlog-actions">
-                              <button className="adm-txlog-btn adm-txlog-btn--save" onClick={() => setBulkEditIdx(null)}>Done</button>
-                            </td>
-                          </tr>
-                        ) : (
-                          <tr key={idx}>
-                            <td>{idx + 1}</td>
-                            <td><span className={`adm-txlog-badge adm-txlog-badge--${txn.type}`}>{txn.type === 'international' ? '🌐' : '⚡'}</span></td>
-                            <td>{txn.beneficiary}</td>
-                            <td className="adm-txlog-amt">${formatBalance(txn.amount)}</td>
-                            <td>{new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                            <td>{txn.bankName}</td>
-                            <td>{txn.country || '—'}</td>
-                            <td className="adm-txlog-actions">
-                              <button className="adm-txlog-btn" onClick={() => setBulkEditIdx(idx)}>✏️</button>
-                              <button className="adm-txlog-btn adm-txlog-btn--del" onClick={() => removeBulkItem(idx)}>🗑</button>
-                            </td>
-                          </tr>
-                        )
-                      ))}
-                    </tbody>
-                  </table>
+              {/* Profile Picture */}
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  <span className="admin-section-icon">📸</span>
+                  Profile Picture
+                </h2>
+                <div className="admin-card">
+                  <div className="adm-pic-row">
+                    <div className="adm-pic-preview">
+                      {profilePic
+                        ? <img src={profilePic} alt="Profile" className="adm-pic-img" />
+                        : <span className="adm-pic-placeholder">👤</span>}
+                    </div>
+                    <div className="adm-pic-actions">
+                      <label className="adm-pic-btn" style={{ display: 'inline-block', textAlign: 'center', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}>
+                        📷 Upload New Photo
+                        <input type="file" accept="image/*"
+                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                          onChange={handlePicUpload} />
+                      </label>
+                      {profilePic && (
+                        <button className="adm-pic-btn adm-pic-btn--danger" onClick={removePic}>🗑 Remove Photo</button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </section>
+              </section>
 
-        {/* ── Block Transfers ───────────────────────────── */}
-        <section className="admin-section">
-          <h2 className="admin-section-title">
-            <span className="admin-section-icon">🛡️</span>
-            Block Transfers (Security Hold)
-          </h2>
-          <div className="admin-card">
-            <p className="adm-block-desc">
-              When enabled, ALL transfer attempts will be blocked and the user will see a suspicious-activity suspension message.
-            </p>
-            <div className="adm-block-msg-preview">
-              <strong>Message shown to user:</strong>
-              <p className="adm-block-msg-text">{BLOCK_MSG}</p>
-            </div>
-            <div className="adm-block-actions">
-              {form.suspended ? (
-                <>
-                  <div className="adm-block-status adm-block-status--active">
-                    🔴 TRANSFERS ARE BLOCKED
+              {/* Sync */}
+              <div className="admin-sync-wrap">
+                <button
+                  className={`admin-sync-btn ${synced ? 'admin-sync-btn--done' : ''}`}
+                  disabled={loadingBtn === 'sync'}
+                  onClick={() => withLoading('sync', async () => { handleSync() })}
+                >
+                  {loadingBtn === 'sync' ? <span className="admin-btn-spinner" /> : synced ? '✓  Synced to App' : '⟳  Sync App'}
+                </button>
+                <p className="admin-sync-hint">Pushes all changes to the main banking app instantly.</p>
+              </div>
+            </>
+          )}
+
+          {/* ════════════════════════════════════════════════
+              TRANSACTION APPROVAL
+              ════════════════════════════════════════════════ */}
+          {activeSection === 'txn-approval' && (
+            <>
+              {/* Transaction Logs */}
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  <span className="admin-section-icon">📋</span>
+                  Transaction Logs
+                </h2>
+                <div className="admin-card">
+                  <div className="adm-txlog-header">
+                    <span className="admin-card-title">{history.length} transaction{history.length !== 1 ? 's' : ''}</span>
+                    {history.length > 0 && (
+                      <button className="adm-txlog-clear" onClick={clearAllHistory}>🗑 Clear All</button>
+                    )}
                   </div>
-                  <button className="admin-action-btn admin-action-btn--credit" onClick={disableBlock}>
-                    ✓ Unblock Transfers
+
+                  {history.length === 0 ? (
+                    <p className="adm-txlog-empty">No transactions recorded.</p>
+                  ) : (
+                    <div className="adm-txlog-table-wrap">
+                      <table className="adm-txlog-table">
+                        <thead>
+                          <tr>
+                            <th>Ref</th><th>Type</th><th>Beneficiary</th><th>Amount</th><th>Date</th><th>Bank</th><th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.map((txn) => (
+                            editingTxn === txn.id ? (
+                              <tr key={txn.id} className="adm-txlog-edit-row">
+                                <td><input className="adm-txlog-input" value={editForm.ref || ''} onChange={(e) => setEditForm(p => ({ ...p, ref: e.target.value }))} /></td>
+                                <td>
+                                  <select className="adm-txlog-input" value={editForm.type || 'local'} onChange={(e) => setEditForm(p => ({ ...p, type: e.target.value }))}>
+                                    <option value="local">Local</option>
+                                    <option value="international">International</option>
+                                  </select>
+                                </td>
+                                <td><input className="adm-txlog-input" value={editForm.beneficiary || ''} onChange={(e) => setEditForm(p => ({ ...p, beneficiary: e.target.value }))} /></td>
+                                <td><input className="adm-txlog-input" type="text" value={editForm.amount || ''} onChange={(e) => setEditForm(p => ({ ...p, amount: e.target.value }))} /></td>
+                                <td><input className="adm-txlog-input" type="datetime-local" value={editForm.date ? editForm.date.slice(0, 16) : ''} onChange={(e) => setEditForm(p => ({ ...p, date: new Date(e.target.value).toISOString() }))} /></td>
+                                <td><input className="adm-txlog-input" value={editForm.bankName || ''} onChange={(e) => setEditForm(p => ({ ...p, bankName: e.target.value }))} /></td>
+                                <td className="adm-txlog-actions">
+                                  <button className="adm-txlog-btn adm-txlog-btn--save" onClick={saveEdit}>Save</button>
+                                  <button className="adm-txlog-btn" onClick={() => setEditingTxn(null)}>Cancel</button>
+                                </td>
+                              </tr>
+                            ) : (
+                              <tr key={txn.id}>
+                                <td className="font-mono">{txn.ref}</td>
+                                <td><span className={`adm-txlog-badge adm-txlog-badge--${txn.type}`}>{txn.type === 'international' ? '🌐 Intl' : '⚡ Local'}</span></td>
+                                <td>{txn.beneficiary}</td>
+                                <td className="adm-txlog-amt">${formatBalance(txn.amount)}</td>
+                                <td>{new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                                <td>{txn.bankName}</td>
+                                <td className="adm-txlog-actions">
+                                  <button className="adm-txlog-btn" onClick={() => startEdit(txn)}>✏️</button>
+                                  <button className="adm-txlog-btn adm-txlog-btn--del" onClick={() => deleteTxn(txn.id)}>🗑</button>
+                                </td>
+                              </tr>
+                            )
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Manual Transactions */}
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  <span className="admin-section-icon">⚡</span>
+                  Manual Transactions
+                </h2>
+                <div className="admin-card admin-txn-actions">
+                  <button
+                    className="admin-action-btn admin-action-btn--credit"
+                    disabled={loadingBtn === 'man-credit'}
+                    onClick={() => withLoading('man-credit', async () => { handleManualTxn('credit') })}
+                  >
+                    {loadingBtn === 'man-credit' ? <span className="admin-btn-spinner" /> : <><span className="admin-action-icon">↓</span> Manual Credit</>}
                   </button>
-                </>
-              ) : (
-                <>
-                  <div className="adm-block-status adm-block-status--inactive">
-                    🟢 Transfers are active
+                  <button
+                    className="admin-action-btn admin-action-btn--debit"
+                    disabled={loadingBtn === 'man-debit'}
+                    onClick={() => withLoading('man-debit', async () => { handleManualTxn('debit') })}
+                  >
+                    {loadingBtn === 'man-debit' ? <span className="admin-btn-spinner" /> : <><span className="admin-action-icon">↑</span> Manual Debit</>}
+                  </button>
+                </div>
+              </section>
+
+              {/* Bulk Generator */}
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  <span className="admin-section-icon">📦</span>
+                  Bulk Transaction Generator
+                </h2>
+                <div className="admin-card">
+                  <p className="adm-bulk-desc">Generate realistic transactions with random dates, names, accounts, and countries.</p>
+                  <div className="adm-bulk-controls">
+                    <div className="adm-bulk-field">
+                      <label className="admin-label">Count</label>
+                      <input className="admin-input" type="number" min="1" max="200" value={bulkCount}
+                        onChange={(e) => setBulkCount(Math.min(200, Math.max(1, parseInt(e.target.value) || 1)))} />
+                    </div>
+                    <div className="adm-bulk-field">
+                      <label className="admin-label">Months Back</label>
+                      <input className="admin-input" type="number" min="1" max="60" value={bulkMonths}
+                        onChange={(e) => setBulkMonths(Math.min(60, Math.max(1, parseInt(e.target.value) || 1)))} />
+                    </div>
+                    <button
+                      className="admin-action-btn admin-action-btn--credit"
+                      disabled={loadingBtn === 'gen-bulk'}
+                      onClick={() => withLoading('gen-bulk', async () => { generateBulk() })}
+                    >
+                      {loadingBtn === 'gen-bulk' ? <span className="admin-btn-spinner" /> : '⚡ Generate Preview'}
+                    </button>
                   </div>
-                  <button className="admin-action-btn admin-action-btn--debit" onClick={enableBlock}>
-                    🛑 Block All Transfers
+
+                  {bulkPreview.length > 0 && (
+                    <div className="adm-bulk-preview">
+                      <div className="adm-bulk-preview-header">
+                        <span className="adm-bulk-count">{bulkPreview.length} transactions ready</span>
+                        <div>
+                          <button className="adm-txlog-btn adm-txlog-btn--save" onClick={confirmBulk}>✓ Add All</button>
+                          <button className="adm-txlog-btn" onClick={() => setBulkPreview([])} style={{ marginLeft: 8 }}>✕ Discard</button>
+                        </div>
+                      </div>
+                      <div className="adm-txlog-table-wrap">
+                        <table className="adm-txlog-table">
+                          <thead>
+                            <tr><th>#</th><th>Type</th><th>Beneficiary</th><th>Amount</th><th>Date</th><th>Bank</th><th>Country</th><th>Actions</th></tr>
+                          </thead>
+                          <tbody>
+                            {bulkPreview.map((txn, idx) => (
+                              bulkEditIdx === idx ? (
+                                <tr key={idx} className="adm-txlog-edit-row">
+                                  <td>{idx + 1}</td>
+                                  <td><select className="adm-txlog-input" value={txn.type} onChange={(e) => updateBulkItem(idx, 'type', e.target.value)}><option value="local">Local</option><option value="international">International</option></select></td>
+                                  <td><input className="adm-txlog-input" value={txn.beneficiary} onChange={(e) => updateBulkItem(idx, 'beneficiary', e.target.value)} /></td>
+                                  <td><input className="adm-txlog-input" type="text" value={txn.amount} onChange={(e) => updateBulkItem(idx, 'amount', e.target.value)} /></td>
+                                  <td><input className="adm-txlog-input" type="datetime-local" value={txn.date.slice(0, 16)} onChange={(e) => updateBulkItem(idx, 'date', new Date(e.target.value).toISOString())} /></td>
+                                  <td><input className="adm-txlog-input" value={txn.bankName} onChange={(e) => updateBulkItem(idx, 'bankName', e.target.value)} /></td>
+                                  <td><input className="adm-txlog-input" value={txn.country || 'N/A'} onChange={(e) => updateBulkItem(idx, 'country', e.target.value)} /></td>
+                                  <td><button className="adm-txlog-btn adm-txlog-btn--save" onClick={() => setBulkEditIdx(null)}>Done</button></td>
+                                </tr>
+                              ) : (
+                                <tr key={idx}>
+                                  <td>{idx + 1}</td>
+                                  <td><span className={`adm-txlog-badge adm-txlog-badge--${txn.type}`}>{txn.type === 'international' ? '🌐' : '⚡'}</span></td>
+                                  <td>{txn.beneficiary}</td>
+                                  <td className="adm-txlog-amt">${formatBalance(txn.amount)}</td>
+                                  <td>{new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                                  <td>{txn.bankName}</td>
+                                  <td>{txn.country || '—'}</td>
+                                  <td className="adm-txlog-actions">
+                                    <button className="adm-txlog-btn" onClick={() => setBulkEditIdx(idx)}>✏️</button>
+                                    <button className="adm-txlog-btn adm-txlog-btn--del" onClick={() => removeBulkItem(idx)}>🗑</button>
+                                  </td>
+                                </tr>
+                              )
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </>
+          )}
+
+          {/* ════════════════════════════════════════════════
+              VAULT CONTROLS
+              ════════════════════════════════════════════════ */}
+          {activeSection === 'vault-controls' && (
+            <>
+              {/* Block Transfers */}
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  <span className="admin-section-icon">🛡️</span>
+                  Block Transfers (Security Hold)
+                </h2>
+                <div className="admin-card">
+                  <p className="adm-block-desc">
+                    When enabled, ALL transfer attempts will be blocked and the user sees a suspension message.
+                  </p>
+                  <div className="adm-block-msg-preview">
+                    <strong>Message shown to user:</strong>
+                    <p className="adm-block-msg-text">{BLOCK_MSG}</p>
+                  </div>
+                  <div className="adm-block-actions">
+                    {form.suspended ? (
+                      <>
+                        <div className="adm-block-status adm-block-status--active">🔴 TRANSFERS ARE BLOCKED</div>
+                        <button
+                          className="admin-action-btn admin-action-btn--credit"
+                          disabled={loadingBtn === 'unblock'}
+                          onClick={() => withLoading('unblock', async () => { disableBlock() })}
+                        >
+                          {loadingBtn === 'unblock' ? <span className="admin-btn-spinner" /> : '✓ Unblock Transfers'}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="adm-block-status adm-block-status--inactive">🟢 Transfers are active</div>
+                        <button
+                          className="admin-action-btn admin-action-btn--debit"
+                          disabled={loadingBtn === 'block'}
+                          onClick={() => withLoading('block', async () => { enableBlock() })}
+                        >
+                          {loadingBtn === 'block' ? <span className="admin-btn-spinner" /> : '🛑 Block All Transfers'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Account Suspension */}
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  <span className="admin-section-icon">🚫</span>
+                  Account Suspension
+                </h2>
+                <div className="admin-card">
+                  <div className="admin-toggle-row">
+                    <span className="admin-toggle-label">Suspend Transfers</span>
+                    <button type="button"
+                      className={`admin-toggle ${form.suspended ? 'admin-toggle--on' : ''}`}
+                      onClick={() => update('suspended', !form.suspended)}
+                      role="switch" aria-checked={form.suspended}>
+                      <span className="admin-toggle-knob" />
+                    </button>
+                  </div>
+                  {form.suspended && (
+                    <div className="admin-reason-wrap">
+                      <label className="admin-label" htmlFor="reason">Suspension Message (shown to user)</label>
+                      <textarea id="reason" className="admin-input admin-textarea"
+                        placeholder="Custom suspension message..." rows={3}
+                        value={form.suspendReason}
+                        onChange={(e) => update('suspendReason', e.target.value)} />
+                    </div>
+                  )}
+                  {form.suspended && (
+                    <div className="admin-alert admin-alert--warn">
+                      ⚠️ Transfers are <strong>disabled</strong>. Users will see the suspension message when they attempt a transfer.
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Sync button */}
+              <div className="admin-sync-wrap">
+                <button
+                  className={`admin-sync-btn ${synced ? 'admin-sync-btn--done' : ''}`}
+                  disabled={loadingBtn === 'sync-vault'}
+                  onClick={() => withLoading('sync-vault', async () => { handleSync() })}
+                >
+                  {loadingBtn === 'sync-vault' ? <span className="admin-btn-spinner" /> : synced ? '✓  Synced to App' : '⟳  Sync App'}
+                </button>
+                <p className="admin-sync-hint">Pushes vault control changes to the main banking app.</p>
+              </div>
+            </>
+          )}
+
+          {/* ════════════════════════════════════════════════
+              FUND TRANSFER (Module 4)
+              ════════════════════════════════════════════════ */}
+          {activeSection === 'fund-transfer' && (
+            <>
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  <span className="admin-section-icon">💸</span>
+                  Move Funds: Main Balance ↔ Savings Vault
+                </h2>
+                <div className="admin-card">
+                  <p className="adm-bulk-desc">
+                    Select a user and move funds between their Main Balance and Savings Vault.
+                    This updates the user's Firestore document in real time.
+                  </p>
+
+                  <button
+                    className="admin-action-btn admin-action-btn--credit"
+                    style={{ marginBottom: 16 }}
+                    disabled={usersLoading}
+                    onClick={fetchAllUsers}
+                  >
+                    {usersLoading ? <span className="admin-btn-spinner" /> : '🔄 Load Users from Firestore'}
                   </button>
-                </>
-              )}
-            </div>
-          </div>
-        </section>
 
-        {/* ── Account Suspension (legacy, now simplified) ── */}
-        <section className="admin-section">
-          <h2 className="admin-section-title">
-            <span className="admin-section-icon">🚫</span>
-            Account Suspension
-          </h2>
-          <div className="admin-card">
-            <div className="admin-toggle-row">
-              <span className="admin-toggle-label">Suspend Transfers</span>
-              <button type="button"
-                className={`admin-toggle ${form.suspended ? 'admin-toggle--on' : ''}`}
-                onClick={() => update('suspended', !form.suspended)}
-                role="switch" aria-checked={form.suspended}>
-                <span className="admin-toggle-knob" />
-              </button>
-            </div>
-            {form.suspended && (
-              <div className="admin-reason-wrap">
-                <label className="admin-label" htmlFor="reason">Suspension Message (shown to user)</label>
-                <textarea id="reason" className="admin-input admin-textarea"
-                  placeholder="Custom suspension message..." rows={3}
-                  value={form.suspendReason}
-                  onChange={(e) => update('suspendReason', e.target.value)} />
-              </div>
-            )}
-            {form.suspended && (
-              <div className="admin-alert admin-alert--warn">
-                ⚠️ Transfers are <strong>disabled</strong>. Users will see the suspension message when they attempt a transfer.
-              </div>
-            )}
-          </div>
-        </section>
+                  {allUsers.length > 0 && (
+                    <>
+                      <label className="admin-label">Select User</label>
+                      <select className="admin-input" value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
+                        <option value="">— Choose a user —</option>
+                        {allUsers.map((u) => (
+                          <option key={u.uid} value={u.uid}>
+                            {u.name || u.email} — Main: ${formatBalance(u.balance || 0)} | Vault: ${formatBalance(u.savingsVault || 0)}
+                          </option>
+                        ))}
+                      </select>
 
-        {/* ── Manual Transactions (legacy) ─────────────── */}
-        <section className="admin-section">
-          <h2 className="admin-section-title">
-            <span className="admin-section-icon">⚡</span>
-            Manual Transactions
-          </h2>
-          <div className="admin-card admin-txn-actions">
-            <button className="admin-action-btn admin-action-btn--credit" onClick={() => handleManualTxn('credit')}>
-              <span className="admin-action-icon">↓</span> Manual Credit
-            </button>
-            <button className="admin-action-btn admin-action-btn--debit" onClick={() => handleManualTxn('debit')}>
-              <span className="admin-action-icon">↑</span> Manual Debit
-            </button>
-          </div>
-        </section>
+                      <label className="admin-label" style={{ marginTop: 12 }}>Direction</label>
+                      <select className="admin-input" value={fundDirection} onChange={(e) => setFundDirection(e.target.value)}>
+                        <option value="main-to-vault">Main Balance → Savings Vault</option>
+                        <option value="vault-to-main">Savings Vault → Main Balance</option>
+                      </select>
 
-        {/* ── System Alert ────────────────────────────── */}
-        <section className="admin-section">
-          <h2 className="admin-section-title">
-            <span className="admin-section-icon">📢</span>
-            System Alert Broadcast
-          </h2>
-          <div className="admin-card">
-            <label className="admin-label">Alert Message</label>
-            <textarea
-              className="admin-input admin-textarea"
-              placeholder="Type your system alert message here..."
-              rows={3}
-              value={alertMsg}
-              onChange={(e) => { setAlertMsg(e.target.value); setAlertSent(false) }}
-            />
-            <div className="adm-alert-actions">
-              <button
-                className={`admin-action-btn admin-action-btn--credit ${alertSent ? 'adm-alert-sent' : ''}`}
-                onClick={broadcastAlert}
-                disabled={!alertMsg.trim()}
-              >
-                {alertSent ? '✓ Broadcasted!' : '📡 Broadcast Alert'}
-              </button>
-              <button className="adm-txlog-btn adm-txlog-btn--del" onClick={clearAlert}>Clear Alert</button>
-            </div>
-            {alertSent && (
-              <div className="admin-alert admin-alert--success" style={{ marginTop: 10 }}>
-                ✅ Alert sent to user dashboard.
-              </div>
-            )}
-          </div>
-        </section>
+                      <label className="admin-label" style={{ marginTop: 12 }}>Amount ($)</label>
+                      <input className="admin-input" type="text" inputMode="decimal"
+                        placeholder="Enter amount to move"
+                        value={fundAmount}
+                        onChange={(e) => setFundAmount(e.target.value)} />
 
-        {/* ── Sync button ───────────────────────────────── */}
-        <div className="admin-sync-wrap">
-          <button className={`admin-sync-btn ${synced ? 'admin-sync-btn--done' : ''}`} onClick={handleSync}>
-            {synced ? '✓  Synced to App' : '⟳  Sync App'}
-          </button>
-          <p className="admin-sync-hint">Pushes all changes to the main banking app instantly.</p>
-        </div>
-      </main>
+                      <button
+                        className="admin-action-btn admin-action-btn--credit"
+                        style={{ marginTop: 16, width: '100%' }}
+                        disabled={fundLoading}
+                        onClick={handleFundTransfer}
+                      >
+                        {fundLoading ? <span className="admin-btn-spinner" /> : `💸 Transfer Funds ${fundDirection === 'main-to-vault' ? 'Main → Vault' : 'Vault → Main'}`}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </section>
+            </>
+          )}
+
+          {/* ════════════════════════════════════════════════
+              SYSTEM ALERTS
+              ════════════════════════════════════════════════ */}
+          {activeSection === 'system' && (
+            <>
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  <span className="admin-section-icon">📢</span>
+                  System Alert Broadcast
+                </h2>
+                <div className="admin-card">
+                  <label className="admin-label">Alert Message</label>
+                  <textarea className="admin-input admin-textarea"
+                    placeholder="Type your system alert message here..." rows={3}
+                    value={alertMsg}
+                    onChange={(e) => { setAlertMsg(e.target.value); setAlertSent(false) }} />
+                  <div className="adm-alert-actions">
+                    <button
+                      className={`admin-action-btn admin-action-btn--credit ${alertSent ? 'adm-alert-sent' : ''}`}
+                      disabled={!alertMsg.trim() || loadingBtn === 'broadcast'}
+                      onClick={() => withLoading('broadcast', async () => { broadcastAlert() })}
+                    >
+                      {loadingBtn === 'broadcast' ? <span className="admin-btn-spinner" /> : alertSent ? '✓ Broadcasted!' : '📡 Broadcast Alert'}
+                    </button>
+                    <button className="adm-txlog-btn adm-txlog-btn--del" onClick={clearAlert}>Clear Alert</button>
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
+        </main>
+      </div>
     </div>
   )
 }

@@ -176,7 +176,6 @@ export default function TransactionHistory({ onClose }) {
                   </div>
                   <div className="th-txn-amounts">
                     <span className="th-txn-amount font-mono">-${fmt(t.amount)}</span>
-                    <span className="th-txn-bal font-mono">${fmt(t.balanceAfter)}</span>
                   </div>
                 </div>
                 {expandedId === t.id && (
@@ -188,7 +187,6 @@ export default function TransactionHistory({ onClose }) {
                     {t.bankName && <div className="th-detail-row"><span>Bank</span><strong>{t.bankName}</strong></div>}
                     {t.country && <div className="th-detail-row"><span>Country</span><strong>{t.country}</strong></div>}
                     <div className="th-detail-row"><span>Amount</span><strong>-${fmt(t.amount)}</strong></div>
-                    <div className="th-detail-row"><span>Balance After</span><strong>${fmt(t.balanceAfter)}</strong></div>
                     <div className="th-detail-row"><span>Date</span><strong>{new Date(t.date).toLocaleString()}</strong></div>
                     <button className="th-download-btn" onClick={(e) => { e.stopPropagation(); generateTransferPDF(t) }}>
                       ↓ Download Receipt

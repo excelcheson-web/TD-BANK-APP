@@ -199,6 +199,7 @@ export default function Dashboard({ user, onLogout }) {
   const [bankBalance, setBankBalance] = useState(() => {
     return parseFloat(localStorage.getItem('bank_balance') || '0')
   })
+  const [savingsVault, setSavingsVault] = useState(0)
   const [showIntlTransfer, setShowIntlTransfer] = useState(false)
   const [showLocalTransfer, setShowLocalTransfer] = useState(false)
   const [showAccountInfo, setShowAccountInfo] = useState(false)
@@ -222,6 +223,7 @@ export default function Dashboard({ user, onLogout }) {
   const [adToast, setAdToast] = useState(null)
   const [showLogoMenu, setShowLogoMenu] = useState(false)
   const [overlayLoading, setOverlayLoading] = useState(false)
+  const [showGreeting, setShowGreeting] = useState(true)
   const logoMenuRef = useRef(null)
   const wealthRef = useRef(null)
   const loadingTimerRef = useRef(null)
@@ -236,6 +238,12 @@ export default function Dashboard({ user, onLogout }) {
       action()
     }, 2000)
   }, [overlayLoading])
+
+  // Auto-dismiss greeting after 4 seconds
+  useEffect(() => {
+    const t = setTimeout(() => setShowGreeting(false), 4000)
+    return () => clearTimeout(t)
+  }, [])
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
@@ -347,6 +355,9 @@ export default function Dashboard({ user, onLogout }) {
     const unsub = subscribeToUserDoc(user.uid, (data) => {
       if (data.balance !== undefined) {
         setBankBalance(data.balance)
+      }
+      if (data.savingsVault !== undefined) {
+        setSavingsVault(data.savingsVault)
       }
     })
     return () => unsub()
@@ -618,6 +629,15 @@ export default function Dashboard({ user, onLogout }) {
         </div>
       )}
 
+      {/* ── Welcome greeting (resets on every refresh) ───── */}
+      {showGreeting && (
+        <div className="db-greeting-banner">
+          <span className="db-greeting-text">
+            Good {getTimeOfDay()}, {user?.name?.split(' ')[0] || 'there'}! Welcome to TD Bank
+          </span>
+        </div>
+      )}
+
       {/* ── Balance card ─────────────────────────────────── */}
       <section className="db-balance-section">
         <div className="db-balance-card">
@@ -670,8 +690,7 @@ export default function Dashboard({ user, onLogout }) {
           </div>
           <div className="db-account-card db-account-card--dark">
             <span className="db-account-type">Savings Vault</span>
-            <p className="db-account-bal font-mono">$0.00</p>
-            {accountNumber && <span className="db-account-num">●●●● {String(Number(accountNumber) + 1).slice(-4)}</span>}
+            <p className="db-account-bal font-mono"><AnimatedBalance value={savingsVault} /></p>
           </div>
         </div>
       </section>

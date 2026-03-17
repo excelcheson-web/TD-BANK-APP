@@ -53,7 +53,6 @@ export default function TransactionSuccess({
 
   useEffect(() => {
     if (visible) {
-      // trigger slide‑up on next frame
       requestAnimationFrame(() => setAnimClass('txn-success--open'))
     } else {
       setAnimClass('')
@@ -64,16 +63,14 @@ export default function TransactionSuccess({
 
   const {
     fromName = 'TD CONVENIENCE CHECKING',
-    fromAccount = 'x6739',
-    fromBalance = '$8,068.95',
     toName = 'TD Cash',
-    toAccount = 'x1635',
-    toBalance = '$4,358.00',
     amount = '$700.00',
     type = 'Immediate',
     date = 'Jun 2, 2023',
     confirmation = '856976674',
   } = data
+
+  const txnDate = date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
   return (
     <div className={`txn-success-overlay ${animClass}`} onClick={onClose}>
@@ -81,7 +78,6 @@ export default function TransactionSuccess({
 
         {/* ── Green "Thank you" header ───────────────────── */}
         <div className="txn-success-header">
-          {/* Download PDF button – top right */}
           <button className="txn-download-btn" title="Download PDF">
             <DownloadIcon />
             <span>PDF</span>
@@ -93,47 +89,52 @@ export default function TransactionSuccess({
           <p className="txn-success-conf">Confirmation: {confirmation}</p>
         </div>
 
-        {/* ── Semi-transparent receipt body ──────────────── */}
+        {/* ── Professional receipt body with watermark ───── */}
         <div className="txn-success-body">
-          <div className="txn-row">
-            <span className="txn-label">From</span>
-            <div className="txn-value">
-              <strong>{fromName}</strong>
-              <span className="txn-sub">{fromAccount}</span>
-              <span className="txn-sub text-green font-mono">{fromBalance}</span>
-            </div>
-          </div>
+          {/* Watermark logo */}
+          <img src="/td-logo.png" alt="" className="txn-receipt-watermark" draggable="false" />
 
+          <div className="txn-row">
+            <span className="txn-label">Date</span>
+            <span className="txn-value">{txnDate}</span>
+          </div>
           <div className="txn-divider" />
 
           <div className="txn-row">
-            <span className="txn-label">To</span>
-            <div className="txn-value">
-              <strong>{toName}</strong>
-              <span className="txn-sub">{toAccount}</span>
-              <span className="txn-sub text-green font-mono">{toBalance}</span>
-            </div>
+            <span className="txn-label">Transaction ID</span>
+            <span className="txn-value"><strong className="font-mono">{confirmation}</strong></span>
           </div>
+          <div className="txn-divider" />
 
+          <div className="txn-row">
+            <span className="txn-label">Sender</span>
+            <span className="txn-value"><strong>{fromName}</strong></span>
+          </div>
+          <div className="txn-divider" />
+
+          <div className="txn-row">
+            <span className="txn-label">Recipient</span>
+            <span className="txn-value"><strong>{toName}</strong></span>
+          </div>
           <div className="txn-divider" />
 
           <div className="txn-row">
             <span className="txn-label">Amount</span>
-            <span className="txn-value"><strong className="font-mono">{amount}</strong></span>
+            <span className="txn-value"><strong className="font-mono txn-amount-highlight">{amount}</strong></span>
           </div>
-
           <div className="txn-divider" />
 
           <div className="txn-row">
             <span className="txn-label">Type</span>
             <span className="txn-value">{type}</span>
           </div>
-
           <div className="txn-divider" />
 
           <div className="txn-row">
-            <span className="txn-label">Transfer date</span>
-            <span className="txn-value">{date}</span>
+            <span className="txn-label">Status</span>
+            <span className="txn-value">
+              <span className="txn-status-badge">● Completed</span>
+            </span>
           </div>
         </div>
 
