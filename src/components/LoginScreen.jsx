@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import VaultLoader from './VaultLoader'
 import TDLogo from './TDLogo'
-import { loginUser } from '../services/firebase'
+import { loginUser } from '../services/supabaseAuth'
 
 /* ── Inline SVG icons ────────────────────────────────────── */
 

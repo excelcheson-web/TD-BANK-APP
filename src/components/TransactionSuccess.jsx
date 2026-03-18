@@ -114,11 +114,7 @@ export default function TransactionSuccess({
           </div>
           <div className="txn-divider" />
 
-          <div className="txn-row">
-            <span className="txn-label">Sender</span>
-            <span className="txn-value"><strong>{fromName}</strong></span>
-          </div>
-          <div className="txn-divider" />
+          {/* Sender row removed for privacy lockdown (no balance or sender info) */}
 
           <div className="txn-row">
             <span className="txn-label">Recipient</span>
@@ -127,8 +123,12 @@ export default function TransactionSuccess({
           <div className="txn-divider" />
 
           <div className="txn-row">
-            <span className="txn-label">Amount</span>
-            <span className="txn-value"><strong className="font-mono txn-amount-highlight">{amount}</strong></span>
+            <span className="txn-label">Sent Amount</span>
+            <span className="txn-value">
+              <strong className="font-mono txn-amount-highlight" style={{ color: '#000000' }}>{
+                typeof amount === 'string' ? amount.replace(/^-/, '') : Math.abs(Number(amount)).toLocaleString('en-US', { minimumFractionDigits: 2 })
+              }</strong>
+            </span>
           </div>
           <div className="txn-divider" />
 

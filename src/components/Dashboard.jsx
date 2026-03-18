@@ -16,7 +16,8 @@ import TransactionHistory from './TransactionHistory'
 import FinancialServices from './FinancialServices'
 import CryptoPage from './CryptoPage'
 import TDLogo from './TDLogo'
-import { updateUserProfile, logoutUser, syncLocalToCloud, subscribeToUserDoc } from '../services/firebase'
+import { updateUserProfile, logoutUser } from '../services/supabaseAuth'
+import { supabase } from '../services/supabaseClient'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -349,26 +350,7 @@ export default function Dashboard({ user, onLogout }) {
     return () => window.removeEventListener('storage', onStorage)
   }, [checkNotifications, checkSysAlert])
 
-  // Real-time Firestore listener: instantly sync balance + history across devices
-  useEffect(() => {
-    if (!user?.uid) return
-    const unsub = subscribeToUserDoc(user.uid, (data) => {
-      if (data.balance !== undefined) {
-        setBankBalance(data.balance)
-      }
-      if (data.savingsVault !== undefined) {
-        setSavingsVault(data.savingsVault)
-      }
-    })
-    return () => unsub()
-  }, [user?.uid])
-
-  // Push local balance changes to Firestore (triggered by transfers done on this device)
-  useEffect(() => {
-    if (user?.uid && bankBalance !== undefined) {
-      syncLocalToCloud().catch(() => {})
-    }
-  }, [bankBalance, user?.uid])
+  // Real-time sync and cloud push logic removed for Supabase migration
 
   // Email-sent toast listener
   useEffect(() => {
@@ -870,8 +852,34 @@ export default function Dashboard({ user, onLogout }) {
       <TransactionSuccess
         visible={showReceipt}
         onClose={() => setShowReceipt(false)}
-        data={{ toName: receiverName, amount: `$${lastTxn}`, date: txnDate, fromBalance: `$${balance}` }}
+        data={{
+          toName: receiverName,
+          // Always positive, no negatives
+          amount: `$${Math.abs(Number(lastTxn)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+          date: txnDate,
+          // Do NOT pass fromBalance or any balance info
+        }}
       />
+
+      {/* Example: Send transaction to Supabase (call this after a successful transaction) */}
+      {/*
+      const sendTransactionToSupabase = async ({ userId, receiverName, amount, status }) => {
+        try {
+          await supabase
+            .from('transactions')
+            .insert([
+              {
+                user_id: userId,
+                receiver_name: receiverName,
+                amount: Math.abs(Number(amount)),
+                status: status || 'completed',
+              },
+            ])
+        } catch (err) {
+          console.error('Supabase transaction insert failed:', err)
+        }
+      }
+      */}
 
       {/* ── Global Exchange Modal ────────────────────────── */}
       {showExchange && (() => {

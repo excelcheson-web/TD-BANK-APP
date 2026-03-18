@@ -4,7 +4,7 @@ import LoginScreen from './components/LoginScreen'
 import OnboardingFlow from './components/OnboardingFlow'
 import Dashboard from './components/Dashboard'
 import SecurityLock from './components/SecurityLock'
-import { registerUser, getUserProfile, onAuthChange, subscribeToUserDoc, logoutUser } from './services/firebase'
+import { registerUser, getUserProfile, onAuthChange, logoutUser } from './services/supabaseAuth'
 
 export default function App() {
   const [booting, setBooting] = useState(true)
@@ -36,10 +36,7 @@ export default function App() {
           localStorage.setItem('user_email', profile.email)
           localStorage.setItem('user_name', profile.name)
           localStorage.setItem('bank_balance', String(profile.balance || 0))
-          // Real-time listener keeps localStorage + user state always in sync
-          unsubSnapshot = subscribeToUserDoc(firebaseUser.uid, (data) => {
-            setUser((prev) => prev ? { ...prev, balance: data.balance ?? prev.balance, profilePic: data.profilePic ?? prev.profilePic } : prev)
-          })
+          // Optionally: Add Supabase real-time subscription here if needed
         }
       } else {
         setUser(null)

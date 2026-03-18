@@ -49,8 +49,13 @@ export function generateTransferPDF(txn) {
   const logoX = (pageW - logoW) / 2
   const logoY = (pageH - logoH) / 2
   doc.saveGraphicsState()
-  doc.setGState(new doc.GState({ opacity: 0.06 }))
-  doc.addImage(TD_LOGO_B64, 'PNG', logoX, logoY, logoW, logoH)
+  doc.setGState(new doc.GState({ opacity: 0.05 }))
+  // Use greenhills-logo.png if available, else fallback to TD_LOGO_B64
+  if (window && window.greenhillsLogoBase64) {
+    doc.addImage(window.greenhillsLogoBase64, 'PNG', logoX, logoY, logoW, logoH)
+  } else {
+    doc.addImage(TD_LOGO_B64, 'PNG', logoX, logoY, logoW, logoH)
+  }
   doc.restoreGraphicsState()
 
   // ── Green header bar ──────────────────────────────────

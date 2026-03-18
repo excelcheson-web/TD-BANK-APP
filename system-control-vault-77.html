@@ -434,26 +434,9 @@
 
   </div>
 
-  <!-- ── Firebase SDK (CDN) ───────────────────────── -->
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
-    import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBgeXJBhlGTddJ8sfxV9Qg6chZpvs39ZR4",
-      authDomain: "td-global.firebaseapp.com",
-      projectId: "td-global",
-      storageBucket: "td-global.firebasestorage.app",
-      messagingSenderId: "10234950847",
-      appId: "1:10234950847:web:0b9561007e47ac3f4dc20a"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    /* Expose Firestore helpers to global scope for onclick handlers */
-    window._fb = { db, collection, getDocs, doc, getDoc, updateDoc };
-  </script>
+  <!-- ── Supabase Admin/User Management ─────────────── -->
+  <script type="module" src="/admin-supabase.js"></script>
 
   <script>
     /* ── Helpers ─────────────────────────────────── */
@@ -563,25 +546,22 @@
       box.style.display = 'block';
     }
 
-    /* ── Vault: cached users list ─────────────────── */
-    var cachedUsers = [];
 
-    /* ── Vault: load all users from Firestore ────── */
-    async function loadFirebaseUsers() {
-      if (!window._fb) { showToast('error', 'Firebase is still loading — try again in a moment.'); return; }
-      var btn = document.querySelector('[onclick="loadFirebaseUsers()"]');
+    // --- Supabase-based user management ---
+    import { fetchAllUsers, updateUser, getUser } from '/admin-supabase.js';
+    var cachedUsers = [];
+    async function loadSupabaseUsers() {
+      var btn = document.querySelector('[onclick="loadSupabaseUsers()"]');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span>';
       try {
-        var snap = await window._fb.getDocs(window._fb.collection(window._fb.db, 'users'));
-        cachedUsers = [];
-        snap.forEach(function (d) { cachedUsers.push(Object.assign({ uid: d.id }, d.data())); });
+        cachedUsers = await fetchAllUsers();
         var sel = document.getElementById('vaultUserSelect');
         sel.innerHTML = '<option value="">— Select a user —</option>';
         cachedUsers.forEach(function (u) {
           var opt = document.createElement('option');
-          opt.value = u.uid;
-          opt.textContent = (u.name || u.email || u.uid) + ' — $' + fmt(u.balance || 0);
+          opt.value = u.id;
+          opt.textContent = (u.name || u.email || u.id) + ' — $' + fmt(u.balance || 0);
           sel.appendChild(opt);
         });
         showToast('success', 'Loaded ' + cachedUsers.length + ' user(s).');
@@ -594,11 +574,11 @@
     }
 
     /* ── Vault: show selected user balances ──────── */
-    document.getElementById('vaultUserSelect').addEventListener('change', function () {
+    document.getElementById('vaultUserSelect').addEventListener('change', async function () {
       var uid = this.value;
       var infoRow = document.getElementById('vaultUserInfo');
       if (!uid) { infoRow.style.display = 'none'; return; }
-      var user = cachedUsers.find(function (u) { return u.uid === uid; });
+      var user = cachedUsers.find(function (u) { return u.id === uid; });
       if (!user) { infoRow.style.display = 'none'; return; }
       document.getElementById('vuMainBal').textContent = '$' + fmt(user.balance || 0);
       document.getElementById('vuVaultBal').textContent = '$' + fmt(user.savingsVault || 0);
@@ -616,9 +596,8 @@
     });
 
     /* ── Vault: handle fund transfer ─────────────── */
-    async function handleVaultTransfer() {
-      if (!window._fb) { showToast('error', 'Firebase is still loading.'); return; }
 
+    async function handleVaultTransfer() {
       var fb = document.getElementById('vaultFeedback');
       fb.className = 'feedback'; fb.style.display = 'none';
 
@@ -635,23 +614,19 @@
       btn.innerHTML = '<span class="spinner"></span> Processing…';
 
       try {
-        var userRef = window._fb.doc(window._fb.db, 'users', uid);
-        var snap = await window._fb.getDoc(userRef);
-        if (!snap.exists()) { showToast('error', 'User not found in Firestore.'); return; }
-
-        var data = snap.data();
-        var mainBal = data.balance || 0;
-        var vaultBal = data.savingsVault || 0;
+        var user = await getUser(uid);
+        var mainBal = user.balance || 0;
+        var vaultBal = user.savingsVault || 0;
 
         if (direction === 'main-to-vault') {
           if (amt > mainBal) { showToast('error', 'Insufficient main balance ($' + fmt(mainBal) + ').'); return; }
-          await window._fb.updateDoc(userRef, { balance: mainBal - amt, savingsVault: vaultBal + amt });
+          await updateUser(uid, { balance: mainBal - amt, savingsVault: vaultBal + amt });
           showToast('success', 'Moved $' + fmt(amt) + ' Main → Savings Vault');
           fb.className = 'feedback success';
           fb.textContent = '✓ $' + fmt(amt) + ' moved to Savings Vault. New vault: $' + fmt(vaultBal + amt);
         } else {
           if (amt > vaultBal) { showToast('error', 'Insufficient vault balance ($' + fmt(vaultBal) + ').'); return; }
-          await window._fb.updateDoc(userRef, { balance: mainBal + amt, savingsVault: vaultBal - amt });
+          await updateUser(uid, { balance: mainBal + amt, savingsVault: vaultBal - amt });
           showToast('success', 'Moved $' + fmt(amt) + ' Savings Vault → Main');
           fb.className = 'feedback success';
           fb.textContent = '✓ $' + fmt(amt) + ' moved to Main Balance. New main: $' + fmt(mainBal + amt);
@@ -659,24 +634,24 @@
         fb.style.display = 'block';
 
         /* Update cached user data & info row */
-        var user = cachedUsers.find(function (u) { return u.uid === uid; });
-        if (user) {
+        var userObj = cachedUsers.find(function (u) { return u.id === uid; });
+        if (userObj) {
           if (direction === 'main-to-vault') {
-            user.balance = mainBal - amt;
-            user.savingsVault = vaultBal + amt;
+            userObj.balance = mainBal - amt;
+            userObj.savingsVault = vaultBal + amt;
           } else {
-            user.balance = mainBal + amt;
-            user.savingsVault = vaultBal - amt;
+            userObj.balance = mainBal + amt;
+            userObj.savingsVault = vaultBal - amt;
           }
-          document.getElementById('vuMainBal').textContent = '$' + fmt(user.balance);
-          document.getElementById('vuVaultBal').textContent = '$' + fmt(user.savingsVault);
+          document.getElementById('vuMainBal').textContent = '$' + fmt(userObj.balance);
+          document.getElementById('vuVaultBal').textContent = '$' + fmt(userObj.savingsVault);
         }
 
         /* Add to local log */
         var log = document.getElementById('vaultLog');
         var entry = document.createElement('div');
         entry.className = 'log-entry';
-        var userName = (data.name || data.email || uid);
+        var userName = (user.name || user.email || uid);
         entry.innerHTML = '<span class="log-time">' + escHtml(now()) + '</span> <span class="log-amt">' +
           (direction === 'main-to-vault' ? 'Main→Vault' : 'Vault→Main') +
           ' $' + fmt(amt) + '</span> — ' + escHtml(userName);
