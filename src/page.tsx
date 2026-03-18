@@ -8,11 +8,11 @@ type Todo = {
 
 export default async function Page() {
   const supabase = await createClient();
-  const { data: todos } = await supabase.from('todos').select();
+  const { data } = await supabase.from('profiles').select('*');
   return (
     <ul>
-      {todos?.map((todo: Todo) => (
-        <li key={todo.id}>{todo.name}</li>
+      {data?.map((profile: any) => (
+        <li key={profile.id}>{profile.name}</li>
       ))}
     </ul>
   );

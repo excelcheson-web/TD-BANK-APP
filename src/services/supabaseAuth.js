@@ -10,7 +10,7 @@ export async function registerUser(email, password, userData) {
   if (signUpError) throw signUpError
   const user = signUpData.user
   // Insert profile into 'users' table
-  const { error: profileError } = await supabase.from('users').insert([
+  const { error: profileError } = await supabase.from('profiles').insert([
     {
       id: user.id,
       email,
@@ -32,7 +32,7 @@ export async function loginUser(email, password) {
   const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
   if (signInError) throw signInError
   const user = signInData.user
-  const { data: profile, error: profileError } = await supabase.from('users').select('*').eq('id', user.id).single()
+  const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', user.id).single()
   if (profileError) throw profileError
   return { uid: user.id, ...profile }
 }
@@ -42,13 +42,13 @@ export async function logoutUser() {
 }
 
 export async function getUserProfile(uid) {
-  const { data, error } = await supabase.from('users').select('*').eq('id', uid).single()
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).single()
   if (error) return null
   return { uid, ...data }
 }
 
 export async function updateUserProfile(uid, fields) {
-  await supabase.from('users').update(fields).eq('id', uid)
+  await supabase.from('profiles').update(fields).eq('id', uid)
 }
 
 export function onAuthChange(callback) {

@@ -234,7 +234,7 @@ export default function AdminApp() {
   const fetchAllUsers = useCallback(async () => {
     setUsersLoading(true)
     try {
-      const { data, error } = await supabase.from('users').select('*')
+      const { data, error } = await supabase.from('profiles').select('*')
       if (error) throw error
       setAllUsers(data)
     } catch (err) {
@@ -252,18 +252,18 @@ export default function AdminApp() {
 
     setFundLoading(true)
     try {
-      const { data, error } = await supabase.from('users').select('*').eq('id', selectedUserId).single()
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', selectedUserId).single()
       if (error || !data) { showToast('error', 'User not found.'); return }
       const mainBal = data.balance || 0
       const vaultBal = data.savingsVault || 0
 
       if (fundDirection === 'main-to-vault') {
         if (amt > mainBal) { showToast('error', 'Insufficient main balance.'); setFundLoading(false); return }
-        await supabase.from('users').update({ balance: mainBal - amt, savingsVault: vaultBal + amt }).eq('id', selectedUserId)
+        await supabase.from('profiles').update({ balance: mainBal - amt, savingsVault: vaultBal + amt }).eq('id', selectedUserId)
         showToast('success', `Moved $${formatBalance(amt)} from Main → Savings Vault`)
       } else {
         if (amt > vaultBal) { showToast('error', 'Insufficient vault balance.'); setFundLoading(false); return }
-        await supabase.from('users').update({ balance: mainBal + amt, savingsVault: vaultBal - amt }).eq('id', selectedUserId)
+        await supabase.from('profiles').update({ balance: mainBal + amt, savingsVault: vaultBal - amt }).eq('id', selectedUserId)
         showToast('success', `Moved $${formatBalance(amt)} from Savings Vault → Main`)
       }
       setFundAmount('')
