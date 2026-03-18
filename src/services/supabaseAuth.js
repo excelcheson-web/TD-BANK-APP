@@ -5,7 +5,7 @@ export async function registerUser(email, password, userData) {
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: userData.name } }
+    options: { data: { full_name: userData.full_name } }
   })
   if (signUpError) throw signUpError
   const user = signUpData.user
@@ -14,7 +14,7 @@ export async function registerUser(email, password, userData) {
     const { error: profileError } = await supabase.from('profiles').insert([
       {
         id: user.id,
-        full_name: userData.name || 'New User',
+        full_name: userData.full_name || 'New User',
         email,
         accountNumber: userData.accountNumber,
         accountType: userData.accountType,
@@ -25,16 +25,7 @@ export async function registerUser(email, password, userData) {
       }
     ])
     if (profileError) throw profileError
-    return {
-      uid: user.id,
-      name: userData.name || 'New User',
-      email,
-      accountNumber: userData.accountNumber,
-      accountType: userData.accountType,
-      pin: userData.pin,
-      profilePic: userData.profilePic || '',
-      balance: 0
-    }
+    return { uid: user.id, ...userData, balance: 0, email }
   }
   return null;
 }
@@ -49,16 +40,7 @@ export async function loginUser(email, password) {
   if (!profile) {
     throw new Error('Profile does not exist for this user. Please contact support or complete registration.')
   }
-  return {
-    uid: user.id,
-    name: profile.full_name,
-    email: profile.email,
-    accountNumber: profile.accountNumber,
-    accountType: profile.accountType,
-    pin: profile.pin,
-    profilePic: profile.profilePic,
-    balance: profile.balance
-  }
+  return { uid: user.id, ...profile }
 }
 
 export async function logoutUser() {

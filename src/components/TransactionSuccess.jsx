@@ -69,12 +69,6 @@ export default function TransactionSuccess({
     type = 'Immediate',
     date = 'Jun 2, 2023',
     confirmation = '856976674',
-    sortCode = '',
-    bankName = '',
-    swift = '',
-    intermediaryBank = '',
-    exchangeRate = '',
-    ownerName = '', // profiles.full_name
   } = data
 
   const txnDate = date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -105,93 +99,48 @@ export default function TransactionSuccess({
 
         {/* ── Professional receipt body with watermark ───── */}
         <div className="txn-success-body">
-          {/* TD Bank Logo at top */}
-          <img src="/td-logo.png" alt="TD Bank Logo" style={{ width: 120, margin: '0 auto', display: 'block' }} />
           {/* Watermark logo */}
-          <img src="/td-logo.png" alt="" className="txn-receipt-watermark" draggable="false" style={{ opacity: 0.05 }} />
+          <img src="/td-logo.png" alt="" className="txn-receipt-watermark" draggable="false" />
 
           <div className="txn-row">
-            <span className="txn-label" style={{ color: '#000000' }}>Account Owner</span>
-            <span className="txn-value" style={{ color: '#000000' }}>{ownerName}</span>
+            <span className="txn-label">Date</span>
+            <span className="txn-value">{txnDate}</span>
           </div>
           <div className="txn-divider" />
 
           <div className="txn-row">
-            <span className="txn-label" style={{ color: '#000000' }}>Date</span>
-            <span className="txn-value" style={{ color: '#000000' }}>{txnDate}</span>
+            <span className="txn-label">Transaction ID</span>
+            <span className="txn-value"><strong className="font-mono">{confirmation}</strong></span>
+          </div>
+          <div className="txn-divider" />
+
+          {/* Sender row removed for privacy lockdown (no balance or sender info) */}
+
+          <div className="txn-row">
+            <span className="txn-label">Recipient</span>
+            <span className="txn-value"><strong>{toName}</strong></span>
           </div>
           <div className="txn-divider" />
 
           <div className="txn-row">
-            <span className="txn-label" style={{ color: '#000000' }}>Transaction ID</span>
-            <span className="txn-value" style={{ color: '#000000' }}><strong className="font-mono">{confirmation}</strong></span>
-          </div>
-          <div className="txn-divider" />
-
-          <div className="txn-row">
-            <span className="txn-label" style={{ color: '#000000' }}>Recipient</span>
-            <span className="txn-value" style={{ color: '#000000' }}><strong>{toName}</strong></span>
-          </div>
-          <div className="txn-divider" />
-
-          <div className="txn-row">
-            <span className="txn-label" style={{ color: '#000000' }}>Sent Amount</span>
-            <span className="txn-value" style={{ color: '#000000' }}>
-              <strong className="font-mono txn-amount-highlight">{
+            <span className="txn-label">Sent Amount</span>
+            <span className="txn-value">
+              <strong className="font-mono txn-amount-highlight" style={{ color: '#000000' }}>{
                 typeof amount === 'string' ? amount.replace(/^-/, '') : Math.abs(Number(amount)).toLocaleString('en-US', { minimumFractionDigits: 2 })
               }</strong>
             </span>
           </div>
           <div className="txn-divider" />
 
-          {/* Divergence for Local vs International */}
-          {type === 'International' ? (
-            <>
-              <div className="txn-row">
-                <span className="txn-label" style={{ color: '#000000' }}>Swift/BIC</span>
-                <span className="txn-value" style={{ color: '#000000' }}>{swift}</span>
-              </div>
-              <div className="txn-divider" />
-              <div className="txn-row">
-                <span className="txn-label" style={{ color: '#000000' }}>Currency Exchange Rate</span>
-                <span className="txn-value" style={{ color: '#000000' }}>{exchangeRate}</span>
-              </div>
-              <div className="txn-divider" />
-              <div className="txn-row">
-                <span className="txn-label" style={{ color: '#000000' }}>Intermediary Bank Details</span>
-                <span className="txn-value" style={{ color: '#000000' }}>{intermediaryBank}</span>
-              </div>
-              <div className="txn-divider" />
-            </>
-          ) : (
-            <>
-              <div className="txn-row">
-                <span className="txn-label" style={{ color: '#000000' }}>Local Transaction</span>
-                <span className="txn-value" style={{ color: '#000000' }}>NRT / Inter-bank</span>
-              </div>
-              <div className="txn-divider" />
-              <div className="txn-row">
-                <span className="txn-label" style={{ color: '#000000' }}>Sort Code</span>
-                <span className="txn-value" style={{ color: '#000000' }}>{sortCode}</span>
-              </div>
-              <div className="txn-divider" />
-              <div className="txn-row">
-                <span className="txn-label" style={{ color: '#000000' }}>Bank Name</span>
-                <span className="txn-value" style={{ color: '#000000' }}>{bankName}</span>
-              </div>
-              <div className="txn-divider" />
-            </>
-          )}
-
           <div className="txn-row">
-            <span className="txn-label" style={{ color: '#000000' }}>Type</span>
-            <span className="txn-value" style={{ color: '#000000' }}>{type}</span>
+            <span className="txn-label">Type</span>
+            <span className="txn-value">{type}</span>
           </div>
           <div className="txn-divider" />
 
           <div className="txn-row">
-            <span className="txn-label" style={{ color: '#000000' }}>Status</span>
-            <span className="txn-value" style={{ color: '#000000' }}>
+            <span className="txn-label">Status</span>
+            <span className="txn-value">
               <span className="txn-status-badge">● Completed</span>
             </span>
           </div>

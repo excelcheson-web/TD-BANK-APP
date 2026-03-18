@@ -1,81 +1,50 @@
-
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import VaultLoader from './components/VaultLoader'
 import LoginScreen from './components/LoginScreen'
 import OnboardingFlow from './components/OnboardingFlow'
 import Dashboard from './components/Dashboard'
 import SecurityLock from './components/SecurityLock'
 import { registerUser, getUserProfile, onAuthChange, logoutUser } from './services/supabaseAuth'
-import { supabase } from './services/supabaseClient'
 
 export default function App() {
-
   const [booting, setBooting] = useState(true)
   const [user, setUser] = useState(null)
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authTimedOut, setAuthTimedOut] = useState(false)
   const [registering, setRegistering] = useState(false)
-  const [appLocked, setAppLocked] = useState(false)
 
-  // Supabase session persistence and auth state
+  // Listen for Firebase Auth state changes
   useEffect(() => {
-    // 1. Initial Session Check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsCheckingAuth(false);
-    });
+    let unsubSnapshot = null
+    let resolved = false
 
-    // 2. Auth State Listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (!session) setAppLocked(false);
-    });
+    const timeout = setTimeout(() => {
+      if (!resolved) setAuthTimedOut(true)
+    }, 5000)
 
-    // 3. Inactivity Timers
-    let lockTimer, logoutTimer;
-    const resetSecurityTimers = () => {
-      clearTimeout(lockTimer);
-      clearTimeout(logoutTimer);
-      if (user) {
-        lockTimer = setTimeout(() => setAppLocked(true), 60000); // 60s Lock
-        logoutTimer = setTimeout(() => supabase.auth.signOut(), 1200000); // 20m Logout
+    const unsub = onAuthChange(async (firebaseUser) => {
+      resolved = true
+      clearTimeout(timeout)
+      setAuthTimedOut(false)
+      if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null }
+      if (firebaseUser) {
+        const profile = await getUserProfile(firebaseUser.uid)
+        if (profile) {
+          setUser(profile)
+          localStorage.setItem('securebank_user', JSON.stringify(profile))
+          localStorage.setItem('user_account_type', profile.accountType)
+          localStorage.setItem('user_email', profile.email)
+          localStorage.setItem('user_name', profile.name)
+          localStorage.setItem('bank_balance', String(profile.balance || 0))
+          // Optionally: Add Supabase real-time subscription here if needed
+        }
+      } else {
+        setUser(null)
       }
-    };
-    window.onmousemove = resetSecurityTimers;
-    window.onkeydown = resetSecurityTimers;
-    resetSecurityTimers();
-
-    return () => {
-      subscription.unsubscribe();
-      window.onmousemove = null;
-      window.onkeydown = null;
-    };
-  }, [user]);
-
-  // Inactivity & auto-lock timers
-  useEffect(() => {
-    let lockTimer, logoutTimer;
-    const lockCallback = () => {
-      window.dispatchEvent(new CustomEvent('app-lock'));
-    };
-    const logoutCallback = () => {
-      window.dispatchEvent(new CustomEvent('app-force-logout'));
-    };
-    const resetTimers = () => {
-      clearTimeout(lockTimer);
-      clearTimeout(logoutTimer);
-      lockTimer = setTimeout(lockCallback, 60000); // 60s
-      logoutTimer = setTimeout(logoutCallback, 1200000); // 20m
-    };
-    window.addEventListener('mousemove', resetTimers);
-    window.addEventListener('keypress', resetTimers);
-    resetTimers();
-    return () => {
-      window.removeEventListener('mousemove', resetTimers);
-      window.removeEventListener('keypress', resetTimers);
-      clearTimeout(lockTimer);
-      clearTimeout(logoutTimer);
-    };
-  }, []);
+      setAuthLoading(false)
+    })
+    return () => { clearTimeout(timeout); unsub(); if (unsubSnapshot) unsubSnapshot() }
+  }, [])
 
   // Initialize bank_balance in localStorage if not set
   useEffect(() => {
@@ -96,12 +65,21 @@ export default function App() {
     window.location.reload()
   }
 
-  if (booting || isCheckingAuth) {
-    return <div className="loading-spinner">TD Global Securing Session...</div>;
-  }
-
-  if (appLocked) {
-    return <SecurityLock onUnlock={() => setAppLocked(false)} />;
+  if (booting || authLoading) {
+    if (authTimedOut) {
+      return (
+        <div className="vault-loader-screen">
+          <p className="vault-message" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Connection Timed Out</p>
+          <p className="vault-message" style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '1.5rem' }}>Unable to reach the server. Please check your connection and try again.</p>
+          <button onClick={handleRetry} style={{
+            padding: '12px 32px', borderRadius: '8px', border: 'none',
+            background: '#008a00', color: '#fff', fontSize: '1rem',
+            fontWeight: 600, cursor: 'pointer'
+          }}>Retry</button>
+        </div>
+      )
+    }
+    return <VaultLoader message="Welcome to TD Bank" />
   }
 
   if (registering) {
@@ -140,29 +118,14 @@ export default function App() {
     )
   }
 
-  const handleForceLogout = useCallback(async () => {
-    await logoutUser();
-    setUser(null);
-  }, []);
-
-  // Listen for global lock/logout events
-  useEffect(() => {
-    const lockListener = () => {
-      // Show lock overlay (handled by SecurityLock)
-      window.dispatchEvent(new CustomEvent('show-lock'));
-    };
-    const logoutListener = () => {
-      handleForceLogout();
-    };
-    window.addEventListener('app-lock', lockListener);
-    window.addEventListener('app-force-logout', logoutListener);
-    return () => {
-      window.removeEventListener('app-lock', lockListener);
-      window.removeEventListener('app-force-logout', logoutListener);
-    };
-  }, [handleForceLogout]);
+  const handleForceLogout = async () => {
+    await logoutUser()
+    setUser(null)
+  }
 
   return (
-    <Dashboard profile={user} onLogout={() => setUser(null)} />
-  );
+    <SecurityLock onForceLogout={handleForceLogout}>
+      <Dashboard user={user} onLogout={() => setUser(null)} />
+    </SecurityLock>
+  )
 }
