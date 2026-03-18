@@ -12,25 +12,46 @@ export default function App() {
 
   const [booting, setBooting] = useState(true)
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [registering, setRegistering] = useState(false)
+  const [isLocked, setIsLocked] = useState(false)
 
   // Supabase session persistence and auth state
   useEffect(() => {
-    let ignore = false;
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (ignore) return;
+    // 1. Initial Session Check
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
-      setLoading(false);
-    });
+      setIsLoading(false);
+    };
+    checkSession();
+
+    // 2. Auth State Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (!session) setIsLocked(false);
     });
-    return () => {
-      ignore = true;
-      subscription.unsubscribe();
+
+    // 3. Inactivity Timers
+    let lockTimer, logoutTimer;
+    const resetTimers = () => {
+      clearTimeout(lockTimer);
+      clearTimeout(logoutTimer);
+      if (user) {
+        lockTimer = setTimeout(() => setIsLocked(true), 60000); // 60s Lock
+        logoutTimer = setTimeout(() => supabase.auth.signOut(), 1200000); // 20m Logout
+      }
     };
-  }, []);
+    window.addEventListener('mousemove', resetTimers);
+    window.addEventListener('mousedown', resetTimers);
+    resetTimers();
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('mousemove', resetTimers);
+      window.removeEventListener('mousedown', resetTimers);
+    };
+  }, [user]);
 
   // Inactivity & auto-lock timers
   useEffect(() => {
@@ -77,8 +98,12 @@ export default function App() {
     window.location.reload()
   }
 
-  if (booting || loading) {
+  if (booting || isLoading) {
     return <VaultLoader message="Welcome to TD Bank" />;
+  }
+
+  if (isLocked) {
+    return <SecurityLock onUnlock={() => setIsLocked(false)} />;
   }
 
   if (registering) {
@@ -140,8 +165,6 @@ export default function App() {
   }, [handleForceLogout]);
 
   return (
-    <SecurityLock onForceLogout={handleForceLogout}>
-      <Dashboard user={user} onLogout={() => setUser(null)} />
-    </SecurityLock>
+    <Dashboard user={user} onLogout={() => setUser(null)} />
   );
 }
