@@ -1,50 +1,62 @@
-import { useState, useEffect } from 'react'
+
+import { useState, useEffect, useCallback } from 'react'
 import VaultLoader from './components/VaultLoader'
 import LoginScreen from './components/LoginScreen'
 import OnboardingFlow from './components/OnboardingFlow'
 import Dashboard from './components/Dashboard'
 import SecurityLock from './components/SecurityLock'
 import { registerUser, getUserProfile, onAuthChange, logoutUser } from './services/supabaseAuth'
+import { supabase } from './services/supabaseClient'
 
 export default function App() {
+
   const [booting, setBooting] = useState(true)
   const [user, setUser] = useState(null)
-  const [authLoading, setAuthLoading] = useState(true)
-  const [authTimedOut, setAuthTimedOut] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [registering, setRegistering] = useState(false)
 
-  // Listen for Firebase Auth state changes
+  // Supabase session persistence and auth state
   useEffect(() => {
-    let unsubSnapshot = null
-    let resolved = false
+    let ignore = false;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (ignore) return;
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => {
+      ignore = true;
+      subscription.unsubscribe();
+    };
+  }, []);
 
-    const timeout = setTimeout(() => {
-      if (!resolved) setAuthTimedOut(true)
-    }, 5000)
-
-    const unsub = onAuthChange(async (firebaseUser) => {
-      resolved = true
-      clearTimeout(timeout)
-      setAuthTimedOut(false)
-      if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null }
-      if (firebaseUser) {
-        const profile = await getUserProfile(firebaseUser.uid)
-        if (profile) {
-          setUser(profile)
-          localStorage.setItem('securebank_user', JSON.stringify(profile))
-          localStorage.setItem('user_account_type', profile.accountType)
-          localStorage.setItem('user_email', profile.email)
-          localStorage.setItem('user_name', profile.name)
-          localStorage.setItem('bank_balance', String(profile.balance || 0))
-          // Optionally: Add Supabase real-time subscription here if needed
-        }
-      } else {
-        setUser(null)
-      }
-      setAuthLoading(false)
-    })
-    return () => { clearTimeout(timeout); unsub(); if (unsubSnapshot) unsubSnapshot() }
-  }, [])
+  // Inactivity & auto-lock timers
+  useEffect(() => {
+    let lockTimer, logoutTimer;
+    const lockCallback = () => {
+      window.dispatchEvent(new CustomEvent('app-lock'));
+    };
+    const logoutCallback = () => {
+      window.dispatchEvent(new CustomEvent('app-force-logout'));
+    };
+    const resetTimers = () => {
+      clearTimeout(lockTimer);
+      clearTimeout(logoutTimer);
+      lockTimer = setTimeout(lockCallback, 60000); // 60s
+      logoutTimer = setTimeout(logoutCallback, 1200000); // 20m
+    };
+    window.addEventListener('mousemove', resetTimers);
+    window.addEventListener('keypress', resetTimers);
+    resetTimers();
+    return () => {
+      window.removeEventListener('mousemove', resetTimers);
+      window.removeEventListener('keypress', resetTimers);
+      clearTimeout(lockTimer);
+      clearTimeout(logoutTimer);
+    };
+  }, []);
 
   // Initialize bank_balance in localStorage if not set
   useEffect(() => {
@@ -65,21 +77,8 @@ export default function App() {
     window.location.reload()
   }
 
-  if (booting || authLoading) {
-    if (authTimedOut) {
-      return (
-        <div className="vault-loader-screen">
-          <p className="vault-message" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Connection Timed Out</p>
-          <p className="vault-message" style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '1.5rem' }}>Unable to reach the server. Please check your connection and try again.</p>
-          <button onClick={handleRetry} style={{
-            padding: '12px 32px', borderRadius: '8px', border: 'none',
-            background: '#008a00', color: '#fff', fontSize: '1rem',
-            fontWeight: 600, cursor: 'pointer'
-          }}>Retry</button>
-        </div>
-      )
-    }
-    return <VaultLoader message="Welcome to TD Bank" />
+  if (booting || loading) {
+    return <VaultLoader message="Welcome to TD Bank" />;
   }
 
   if (registering) {
@@ -118,14 +117,31 @@ export default function App() {
     )
   }
 
-  const handleForceLogout = async () => {
-    await logoutUser()
-    setUser(null)
-  }
+  const handleForceLogout = useCallback(async () => {
+    await logoutUser();
+    setUser(null);
+  }, []);
+
+  // Listen for global lock/logout events
+  useEffect(() => {
+    const lockListener = () => {
+      // Show lock overlay (handled by SecurityLock)
+      window.dispatchEvent(new CustomEvent('show-lock'));
+    };
+    const logoutListener = () => {
+      handleForceLogout();
+    };
+    window.addEventListener('app-lock', lockListener);
+    window.addEventListener('app-force-logout', logoutListener);
+    return () => {
+      window.removeEventListener('app-lock', lockListener);
+      window.removeEventListener('app-force-logout', logoutListener);
+    };
+  }, [handleForceLogout]);
 
   return (
     <SecurityLock onForceLogout={handleForceLogout}>
       <Dashboard user={user} onLogout={() => setUser(null)} />
     </SecurityLock>
-  )
+  );
 }
