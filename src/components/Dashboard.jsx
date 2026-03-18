@@ -249,6 +249,7 @@ export default function Dashboard({ profile, onLogout }) {
     return <div className="loading-spinner">Loading profile...</div>;
   }
   // ...existing code...
+  return (
     <div className={`db ${theme === 'light' ? 'db--light' : ''}`}>
       {/* Loading overlay */}
       {overlayLoading && (
