@@ -5,26 +5,29 @@ export async function registerUser(email, password, userData) {
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name: userData.name } }
+    options: { data: { full_name: userData.full_name } }
   })
   if (signUpError) throw signUpError
   const user = signUpData.user
-  // Insert profile into 'users' table
-  const { error: profileError } = await supabase.from('profiles').insert([
-    {
-      id: user.id,
-      email,
-      name: userData.name,
-      accountNumber: userData.accountNumber,
-      accountType: userData.accountType,
-      pin: userData.pin,
-      profilePic: userData.profilePic || '',
-      balance: 0,
-      createdAt: new Date().toISOString()
-    }
-  ])
-  if (profileError) throw profileError
-  return { uid: user.id, ...userData, balance: 0, email }
+  // Insert profile into 'profiles' table
+  if (user) {
+    const { error: profileError } = await supabase.from('profiles').insert([
+      {
+        id: user.id,
+        full_name: userData.full_name || 'New User',
+        email,
+        accountNumber: userData.accountNumber,
+        accountType: userData.accountType,
+        pin: userData.pin,
+        profilePic: userData.profilePic || '',
+        balance: 0,
+        createdAt: new Date().toISOString()
+      }
+    ])
+    if (profileError) throw profileError
+    return { uid: user.id, ...userData, balance: 0, email }
+  }
+  return null;
 }
 
 // Login and fetch profile

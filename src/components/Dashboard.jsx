@@ -880,14 +880,8 @@ export default function Dashboard({ profile, onLogout }) {
         try {
           await supabase
             .from('transactions')
-            .insert([
-              {
-                user_id: userId,
-                receiver_name: receiverName,
-                amount: Math.abs(Number(amount)),
-                status: status || 'completed',
-              },
-            ])
+            .select('*')
+            .eq('user_id', profile.id)
         } catch (err) {
           console.error('Supabase transaction insert failed:', err)
         }
