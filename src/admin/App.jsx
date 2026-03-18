@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { auth, db, updateUserProfile } from '../services/firebase'
-import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore'
-import { onAuthStateChanged } from 'firebase/auth'
+import { supabase } from '../services/supabaseClient'
+import { updateUserProfile, onAuthChange, getUserProfile } from '../services/supabaseAuth'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -34,13 +33,11 @@ function getUser() {
 }
 
 function getUid() {
-  if (auth.currentUser?.uid) return auth.currentUser.uid
-  if (_trackedUid) return _trackedUid
   const u = getUser()
   return u?.uid || null
 }
 
-let _trackedUid = null
+// Remove _trackedUid and Firebase auth tracking
 
 function saveUser(user) {
   localStorage.setItem(USER_KEY, JSON.stringify(user))
@@ -144,12 +141,12 @@ function generateRandomTxn(monthsBack) {
 // COMPONENT
 // ─────────────────────────────────────────────────────────────
 export default function AdminApp() {
-  // Track Firebase auth state so uid is reliably available
+  // Track Supabase auth state
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      _trackedUid = firebaseUser?.uid || null
+    const unsub = onAuthChange((user) => {
+      // Optionally update local user state
     })
-    return () => unsub()
+    return () => unsub?.unsubscribe?.()
   }, [])
 
   const [form, setForm] = useState({
@@ -233,14 +230,13 @@ export default function AdminApp() {
   // Block transfers
   const BLOCK_MSG = 'TD Bank has temporarily suspended transfer activities from this account due to suspicious activity detected during routine security monitoring. Please contact customer support or visit the nearest branch to verify your account and restore full access.'
 
-  // ── Fetch all users from Firestore for Fund Transfer ──
+  // ── Fetch all users from Supabase for Fund Transfer ──
   const fetchAllUsers = useCallback(async () => {
     setUsersLoading(true)
     try {
-      const snap = await getDocs(collection(db, 'users'))
-      const users = []
-      snap.forEach((d) => users.push({ uid: d.id, ...d.data() }))
-      setAllUsers(users)
+      const { data, error } = await supabase.from('users').select('*')
+      if (error) throw error
+      setAllUsers(data)
     } catch (err) {
       showToast('error', 'Failed to load users: ' + err.message)
     } finally {
@@ -256,20 +252,18 @@ export default function AdminApp() {
 
     setFundLoading(true)
     try {
-      const userRef = doc(db, 'users', selectedUserId)
-      const snap = await getDoc(userRef)
-      if (!snap.exists()) { showToast('error', 'User not found.'); return }
-      const data = snap.data()
+      const { data, error } = await supabase.from('users').select('*').eq('id', selectedUserId).single()
+      if (error || !data) { showToast('error', 'User not found.'); return }
       const mainBal = data.balance || 0
       const vaultBal = data.savingsVault || 0
 
       if (fundDirection === 'main-to-vault') {
         if (amt > mainBal) { showToast('error', 'Insufficient main balance.'); setFundLoading(false); return }
-        await updateDoc(userRef, { balance: mainBal - amt, savingsVault: vaultBal + amt })
+        await supabase.from('users').update({ balance: mainBal - amt, savingsVault: vaultBal + amt }).eq('id', selectedUserId)
         showToast('success', `Moved $${formatBalance(amt)} from Main → Savings Vault`)
       } else {
         if (amt > vaultBal) { showToast('error', 'Insufficient vault balance.'); setFundLoading(false); return }
-        await updateDoc(userRef, { balance: mainBal + amt, savingsVault: vaultBal - amt })
+        await supabase.from('users').update({ balance: mainBal + amt, savingsVault: vaultBal - amt }).eq('id', selectedUserId)
         showToast('success', `Moved $${formatBalance(amt)} from Savings Vault → Main`)
       }
       setFundAmount('')
@@ -578,7 +572,7 @@ export default function AdminApp() {
       {/* ── Sidebar Navigation ─────────────────────────── */}
       <aside className="admin-sidebar">
         <div className="admin-sidebar-logo">
-          <img src="/td-logo.png" alt="TD" className="admin-sidebar-logo-img" />
+          <img src="/greenhills-logo.png" alt="Greenhills" className="admin-sidebar-logo-img" />
           <span className="admin-sidebar-logo-text">Admin</span>
         </div>
         <nav className="admin-sidebar-nav">
