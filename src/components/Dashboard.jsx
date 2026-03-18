@@ -417,6 +417,15 @@ export default function Dashboard({ profile, onLogout }) {
 
   return (
     <div className={`db ${theme === 'light' ? 'db--light' : ''}`}>
+      {/* Account Number and Balance UI */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ color: '#000000', fontWeight: 600, fontSize: 18 }}>
+          Account Number: {profile?.account_number || '—'}
+        </div>
+        <div style={{ color: '#000000', fontWeight: 600, fontSize: 18 }}>
+          Balance: ${typeof profile?.balance === 'number' ? profile.balance.toFixed(2) : '0.00'}
+        </div>
+      </div>
       {/* Loading overlay */}
       {overlayLoading && (
         <div className="db-loading-overlay">
