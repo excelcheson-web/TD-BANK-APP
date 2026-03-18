@@ -12,7 +12,9 @@ export default async function Page() {
   return (
     <ul>
       {data?.map((profile: any) => (
-        <li key={profile.id}>{profile.name}</li>
+        <li key={profile.id} style={{ color: '#000000' }}>
+          {profile.full_name} — {profile.email}
+        </li>
       ))}
     </ul>
   );
