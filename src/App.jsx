@@ -163,6 +163,6 @@ export default function App() {
   }, [handleForceLogout]);
 
   return (
-    <Dashboard user={user} onLogout={() => setUser(null)} />
+    <Dashboard profile={user} onLogout={() => setUser(null)} />
   );
 }
