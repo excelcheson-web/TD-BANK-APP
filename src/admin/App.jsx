@@ -252,7 +252,7 @@ export default function AdminApp() {
 
     setFundLoading(true)
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', selectedUserId).single()
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', selectedUserId).maybeSingle()
       if (error || !data) { showToast('error', 'User not found.'); return }
       const mainBal = data.balance || 0
       const vaultBal = data.savingsVault || 0

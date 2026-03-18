@@ -32,8 +32,11 @@ export async function loginUser(email, password) {
   const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
   if (signInError) throw signInError
   const user = signInData.user
-  const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
   if (profileError) throw profileError
+  if (!profile) {
+    throw new Error('Profile does not exist for this user. Please contact support or complete registration.')
+  }
   return { uid: user.id, ...profile }
 }
 
@@ -42,7 +45,7 @@ export async function logoutUser() {
 }
 
 export async function getUserProfile(uid) {
-  const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).single()
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle()
   if (error) return null
   return { uid, ...data }
 }
