@@ -13,7 +13,7 @@ export default function App() {
   const [authTimedOut, setAuthTimedOut] = useState(false)
   const [registering, setRegistering] = useState(false)
 
-  // Listen for Firebase Auth state changes
+  // Listen for Supabase Auth state changes and persist session
   useEffect(() => {
     let unsubSnapshot = null
     let resolved = false
@@ -34,15 +34,22 @@ export default function App() {
           localStorage.setItem('securebank_user', JSON.stringify(profile))
           localStorage.setItem('user_account_type', profile.accountType)
           localStorage.setItem('user_email', profile.email)
-          localStorage.setItem('user_name', profile.name)
+          localStorage.setItem('user_name', profile.full_name)
           localStorage.setItem('bank_balance', String(profile.balance || 0))
-          // Optionally: Add Supabase real-time subscription here if needed
         }
       } else {
         setUser(null)
       }
       setAuthLoading(false)
     })
+    // On mount, try to restore session from localStorage
+    const stored = localStorage.getItem('securebank_user')
+    if (stored && !user) {
+      try {
+        setUser(JSON.parse(stored))
+        setAuthLoading(false)
+      } catch {}
+    }
     return () => { clearTimeout(timeout); unsub(); if (unsubSnapshot) unsubSnapshot() }
   }, [])
 

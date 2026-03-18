@@ -69,6 +69,7 @@ export default function TransactionSuccess({
     type = 'Immediate',
     date = 'Jun 2, 2023',
     confirmation = '856976674',
+    transferType = 'local', // 'local' or 'international'
   } = data
 
   const txnDate = date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -76,11 +77,10 @@ export default function TransactionSuccess({
   return (
     <div className={`txn-success-overlay ${animClass}`} onClick={onClose}>
       <div className={`txn-success ${animClass}`} onClick={(e) => e.stopPropagation()}>
-
         {/* ── Green "Thank you" header ───────────────────── */}
         <div className="txn-success-header">
           <button className="txn-download-btn" title="Download PDF" onClick={() => generateTransferPDF({
-            type: type === 'International' ? 'international' : 'local',
+            type: transferType,
             ref: confirmation,
             beneficiary: toName,
             amount: parseFloat(String(amount).replace(/[^0-9.]/g, '')) || 0,
@@ -90,38 +90,29 @@ export default function TransactionSuccess({
             <DownloadIcon />
             <span>PDF</span>
           </button>
-
           <div className="txn-success-check"><CheckCircle /></div>
           <h2 className="txn-success-title">Thank you!</h2>
           <p className="txn-success-subtitle">Your transfer was successful.</p>
           <p className="txn-success-conf">Confirmation: {confirmation}</p>
         </div>
-
-        {/* ── Professional receipt body with watermark ───── */}
+        {/* ── Professional receipt body with watermark and logo ───── */}
         <div className="txn-success-body">
-          {/* Watermark logo */}
-          <img src="/td-logo.png" alt="" className="txn-receipt-watermark" draggable="false" />
-
+          <img src="/td-logo.png" alt="TD Logo" className="txn-receipt-watermark" draggable="false" />
           <div className="txn-row">
             <span className="txn-label">Date</span>
             <span className="txn-value">{txnDate}</span>
           </div>
           <div className="txn-divider" />
-
           <div className="txn-row">
             <span className="txn-label">Transaction ID</span>
             <span className="txn-value"><strong className="font-mono">{confirmation}</strong></span>
           </div>
           <div className="txn-divider" />
-
-          {/* Sender row removed for privacy lockdown (no balance or sender info) */}
-
           <div className="txn-row">
             <span className="txn-label">Recipient</span>
             <span className="txn-value"><strong>{toName}</strong></span>
           </div>
           <div className="txn-divider" />
-
           <div className="txn-row">
             <span className="txn-label">Sent Amount</span>
             <span className="txn-value">
@@ -131,19 +122,24 @@ export default function TransactionSuccess({
             </span>
           </div>
           <div className="txn-divider" />
-
           <div className="txn-row">
             <span className="txn-label">Type</span>
             <span className="txn-value">{type}</span>
           </div>
           <div className="txn-divider" />
-
           <div className="txn-row">
             <span className="txn-label">Status</span>
             <span className="txn-value">
               <span className="txn-status-badge">● Completed</span>
             </span>
           </div>
+          {/* Receipt-specific text for transfer type */}
+          <div className="txn-divider" />
+          {transferType === 'international' ? (
+            <div className="txn-row"><span className="txn-label" style={{color:'#008a00'}}>Note</span><span className="txn-value">International transfers may take up to 3 business days to arrive and may incur additional fees.</span></div>
+          ) : (
+            <div className="txn-row"><span className="txn-label" style={{color:'#008a00'}}>Note</span><span className="txn-value">Local transfers are usually available instantly.</span></div>
+          )}
         </div>
 
         {/* ── Circular action buttons ───────────────────── */}

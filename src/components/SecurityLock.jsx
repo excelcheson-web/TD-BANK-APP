@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import TDLogo from './TDLogo'
 
 const IDLE_TIMEOUT = 60000          // 60 seconds → PIN lock
-const RELOGIN_TIMEOUT = 30 * 60000  // 30 minutes → full re-login
+const RELOGIN_TIMEOUT = 20 * 60000  // 20 minutes → full re-login
 
 export default function SecurityLock({ children, onForceLogout }) {
   const [locked, setLocked] = useState(false)
