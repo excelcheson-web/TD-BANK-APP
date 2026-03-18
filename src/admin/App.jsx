@@ -234,10 +234,7 @@ export default function AdminApp() {
   const fetchAllUsers = useCallback(async () => {
     setUsersLoading(true)
     try {
-      // Only fetch if user is defined
-      const user = getUser();
-      if (!user?.id) return;
-      const { data, error } = await supabase.from('profiles').select('id, full_name, email')
+      const { data, error } = await supabase.from('profiles').select('*')
       if (error) throw error
       setAllUsers(data)
     } catch (err) {
@@ -250,14 +247,12 @@ export default function AdminApp() {
   // ── Fund Transfer: Move between Main Balance and Savings Vault ──
   const handleFundTransfer = async () => {
     if (!selectedUserId) { showToast('error', 'Please select a user.'); return }
-    const user = getUser();
-    if (!user?.id) return;
     const amt = parseFloat(fundAmount.replace(/,/g, ''))
     if (isNaN(amt) || amt <= 0) { showToast('error', 'Enter a valid amount.'); return }
 
     setFundLoading(true)
     try {
-      const { data, error } = await supabase.from('profiles').select('id, full_name, email').eq('id', selectedUserId).maybeSingle()
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', selectedUserId).maybeSingle()
       if (error || !data) { showToast('error', 'User not found.'); return }
       const mainBal = data.balance || 0
       const vaultBal = data.savingsVault || 0
