@@ -188,6 +188,19 @@ const CameraIcon = () => (
 )
 
 export default function Dashboard({ profile, onLogout }) {
+    useEffect(() => {
+      const channel = supabase
+        .channel('realtime-profiles')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+          console.log('Change received!', payload);
+          // TODO: Trigger a re-fetch or state update here
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }, []);
   const [showReceipt, setShowReceipt] = useState(false)
   const [showTransferOtp, setShowTransferOtp] = useState(false)
   const [admin, setAdmin] = useState(getAdminData)
