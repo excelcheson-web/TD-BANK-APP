@@ -188,6 +188,9 @@ const CameraIcon = () => (
 )
 
 export default function Dashboard({ profile, onLogout }) {
+      if (!profile) {
+        return <div className="loading-spinner">Loading profile...</div>;
+      }
     useEffect(() => {
       const channel = supabase
         .channel('realtime-profiles')
