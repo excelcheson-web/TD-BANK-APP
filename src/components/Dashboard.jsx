@@ -245,6 +245,7 @@ export default function Dashboard({ profile, onLogout }) {
   }, []);
 
   // ...existing code...
+
   if (!profile) {
     return <div className="loading-spinner">Loading profile...</div>;
   }
