@@ -188,22 +188,7 @@ const CameraIcon = () => (
 )
 
 export default function Dashboard({ profile, onLogout }) {
-      if (!profile) {
-        return <div className="loading-spinner">Loading profile...</div>;
-      }
-    useEffect(() => {
-      const channel = supabase
-        .channel('realtime-profiles')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
-          console.log('Change received!', payload);
-          // TODO: Trigger a re-fetch or state update here
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }, []);
+  // All hooks must be called unconditionally at the top level
   const [showReceipt, setShowReceipt] = useState(false)
   const [showTransferOtp, setShowTransferOtp] = useState(false)
   const [admin, setAdmin] = useState(getAdminData)
@@ -245,180 +230,25 @@ export default function Dashboard({ profile, onLogout }) {
   const wealthRef = useRef(null)
   const loadingTimerRef = useRef(null)
 
-  /** Show a brief loading spinner, then execute the action */
-  const openWithLoading = useCallback((action) => {
-    if (overlayLoading) return
-    setOverlayLoading(true)
-    if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current)
-    loadingTimerRef.current = setTimeout(() => {
-      setOverlayLoading(false)
-      action()
-    }, 2000)
-  }, [overlayLoading])
-
-  // Auto-dismiss greeting after 4 seconds
   useEffect(() => {
-    const t = setTimeout(() => setShowGreeting(false), 4000)
-    return () => clearTimeout(t)
-  }, [])
+    const channel = supabase
+      .channel('realtime-profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+        console.log('Change received!', payload);
+        // TODO: Trigger a re-fetch or state update here
+      })
+      .subscribe();
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    localStorage.setItem('app_theme', next)
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // ...existing code...
+  if (!profile) {
+    return <div className="loading-spinner">Loading profile...</div>;
   }
-
-  const togglePrivacy = () => {
-    const next = !balanceHidden
-    setBalanceHidden(next)
-    localStorage.setItem('privacy_state', next ? 'hidden' : 'visible')
-  }
-
-  /* ── Central Ad Click Handler ───────────────────────────── */
-  const handleAdClick = useCallback((type) => {
-    switch (type) {
-      case 'refer': {
-        const refProfile = profile?.email ? encodeURIComponent(profile.email.split('@')[0]) : 'PROFILE'
-        const refLink = `https://tdbank-vault.netlify.app/signup?ref=${refProfile}`
-        navigator.clipboard.writeText(refLink).then(() => {
-          setAdToast('Referral Link Copied!')
-          setTimeout(() => setAdToast(null), 3000)
-        }).catch(() => {
-          setAdToast('Referral Link Copied!')
-          setTimeout(() => setAdToast(null), 3000)
-        })
-        break
-      }
-      case 'receive':
-        setShowDeposit(true)
-        break
-      case 'trust':
-        setShowAccountInfo(true)
-        break
-      default:
-        break
-    }
-  }, [profile])
-
-  // Check for pending notifications
-  const checkNotifications = useCallback(() => {
-    try {
-      const raw = localStorage.getItem(NOTIF_KEY)
-      const notifs = raw ? JSON.parse(raw) : []
-      const unreadList = notifs.filter((n) => !n.read)
-      setHasUnread(unreadList.length > 0)
-      const unread = unreadList[0]
-      if (unread) {
-        setNotification(unread)
-        // Mark as read
-        const updated = notifs.map((n) => n.id === unread.id ? { ...n, read: true } : n)
-        localStorage.setItem(NOTIF_KEY, JSON.stringify(updated))
-        // Re-check remaining unread after marking
-        setHasUnread(updated.filter((n) => !n.read).length > 0)
-        // Auto-dismiss after 6 seconds
-        setTimeout(() => setNotification(null), 6000)
-      }
-    } catch { /* ignore parse errors */ }
-  }, [])
-
-  useEffect(() => { checkNotifications() }, [checkNotifications])
-
-  // System alert detection
-  const checkSysAlert = useCallback(() => {
-    try {
-      const raw = localStorage.getItem('system_notification')
-      if (!raw) return
-      const parsed = JSON.parse(raw)
-      const dismissedId = localStorage.getItem('system_notification_dismissed')
-      if (parsed.id && String(parsed.id) !== dismissedId) {
-        setSysAlert(parsed)
-      }
-    } catch { /* ignore */ }
-  }, [])
-
-  useEffect(() => { checkSysAlert() }, [checkSysAlert])
-
-  // Close logo menu on outside click
-  useEffect(() => {
-    if (!showLogoMenu) return
-    const handler = (e) => {
-      if (logoMenuRef.current && !logoMenuRef.current.contains(e.target)) setShowLogoMenu(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showLogoMenu])
-
-  const dismissSysAlert = () => {
-    if (sysAlert) localStorage.setItem('system_notification_dismissed', String(sysAlert.id))
-    setSysAlert(null)
-  }
-
-  useEffect(() => {
-    const onStorage = (e) => {
-      if (e.key === STORAGE_KEY) setAdmin(getAdminData())
-      if (e.key === NOTIF_KEY) checkNotifications()
-      if (e.key === 'bank_balance') {
-        setBankBalance(parseFloat(e.newValue || '0'))
-      }
-      if (e.key === 'system_notification') checkSysAlert()
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [checkNotifications, checkSysAlert])
-
-  // Real-time sync and cloud push logic removed for Supabase migration
-
-  // Email-sent toast listener
-  useEffect(() => {
-    const onEmail = (e) => {
-      setEmailToast(e.detail)
-      setTimeout(() => setEmailToast(null), 4000)
-    }
-    window.addEventListener('email-sent', onEmail)
-    return () => window.removeEventListener('email-sent', onEmail)
-  }, [])
-
-  // OTP toast listener
-  useEffect(() => {
-    const onOtp = (e) => {
-      setOtpToast(e.detail)
-      setTimeout(() => setOtpToast(null), 8000)
-    }
-    window.addEventListener('otp-toast', onOtp)
-    return () => window.removeEventListener('otp-toast', onOtp)
-  }, [])
-
-  useEffect(() => {
-    const onFocus = () => {
-      setAdmin(getAdminData())
-      checkNotifications()
-      checkSysAlert()
-      setBankBalance(parseFloat(localStorage.getItem('bank_balance') || '0'))
-    }
-    window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
-  }, [checkNotifications])
-
-  const balance = admin.balance || '0.00'
-  const lastTxn = admin.lastTxnAmount || '0.00'
-  const receiverName = admin.receiverName || 'N/A'
-  const accountNumber = profile?.accountNumber || null
-  const maskedAcct = accountNumber ? `*${accountNumber.slice(-4)}` : ''
-  const txnDate = admin.txnDate
-    ? new Date(admin.txnDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : 'Mar 14, 2026'
-
-  const handleTransferTap = useCallback(() => {
-    if (admin.suspended) {
-      setShowSuspend(true)
-    } else {
-      setShowTransferOtp(true)
-    }
-  }, [admin.suspended])
-
-  const transactions = getTransactions(admin)
-
-  return (
+  // ...existing code...
     <div className={`db ${theme === 'light' ? 'db--light' : ''}`}>
       {/* Loading overlay */}
       {overlayLoading && (
