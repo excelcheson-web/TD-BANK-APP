@@ -2494,7 +2494,7 @@ a { color: inherit; text-decoration: none; }
   width: 220px;
   height: 220px;
   background: url('/td-logo.png') center / contain no-repeat;
-  opacity: 0.1;
+  opacity: 0.05;
   pointer-events: none;
 }
 
@@ -2507,7 +2507,7 @@ a { color: inherit; text-decoration: none; }
   width: 220px;
   height: 220px;
   object-fit: contain;
-  opacity: 0.1;
+  opacity: 0.05;
   pointer-events: none;
   user-select: none;
   z-index: 0;
@@ -2531,7 +2531,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Amount highlight ───────────────────────────────────────── */
 .txn-amount-highlight {
-  color: #333;
+  color: #000000;
   font-size: 1.05rem;
 }
 
@@ -3599,7 +3599,7 @@ a { color: inherit; text-decoration: none; }
   font-size: 0.82rem;
 }
 .tf-receipt-amt {
-  color: #dc2626 !important;
+  color: #000000 !important;
 }
 
 /* ── Server Progress Bar (shared) ───────────────────────────── */

@@ -10,12 +10,22 @@ export default function App() {
   const [booting, setBooting] = useState(true)
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [authTimedOut, setAuthTimedOut] = useState(false)
   const [registering, setRegistering] = useState(false)
 
   // Listen for Firebase Auth state changes
   useEffect(() => {
     let unsubSnapshot = null
+    let resolved = false
+
+    const timeout = setTimeout(() => {
+      if (!resolved) setAuthTimedOut(true)
+    }, 5000)
+
     const unsub = onAuthChange(async (firebaseUser) => {
+      resolved = true
+      clearTimeout(timeout)
+      setAuthTimedOut(false)
       if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null }
       if (firebaseUser) {
         const profile = await getUserProfile(firebaseUser.uid)
@@ -36,7 +46,7 @@ export default function App() {
       }
       setAuthLoading(false)
     })
-    return () => { unsub(); if (unsubSnapshot) unsubSnapshot() }
+    return () => { clearTimeout(timeout); unsub(); if (unsubSnapshot) unsubSnapshot() }
   }, [])
 
   // Initialize bank_balance in localStorage if not set
@@ -52,7 +62,26 @@ export default function App() {
     return () => clearTimeout(t)
   }, [])
 
+  const handleRetry = () => {
+    setAuthTimedOut(false)
+    setAuthLoading(true)
+    window.location.reload()
+  }
+
   if (booting || authLoading) {
+    if (authTimedOut) {
+      return (
+        <div className="vault-loader-screen">
+          <p className="vault-message" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Connection Timed Out</p>
+          <p className="vault-message" style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '1.5rem' }}>Unable to reach the server. Please check your connection and try again.</p>
+          <button onClick={handleRetry} style={{
+            padding: '12px 32px', borderRadius: '8px', border: 'none',
+            background: '#008a00', color: '#fff', fontSize: '1rem',
+            fontWeight: 600, cursor: 'pointer'
+          }}>Retry</button>
+        </div>
+      )
+    }
     return <VaultLoader message="Welcome to TD Bank" />
   }
 
