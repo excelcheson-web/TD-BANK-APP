@@ -12,44 +12,42 @@ export default function App() {
 
   const [booting, setBooting] = useState(true)
   const [user, setUser] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [registering, setRegistering] = useState(false)
-  const [isLocked, setIsLocked] = useState(false)
+  const [appLocked, setAppLocked] = useState(false)
 
   // Supabase session persistence and auth state
   useEffect(() => {
     // 1. Initial Session Check
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      setIsLoading(false);
-    };
-    checkSession();
+      setIsCheckingAuth(false);
+    });
 
     // 2. Auth State Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (!session) setIsLocked(false);
+      if (!session) setAppLocked(false);
     });
 
     // 3. Inactivity Timers
     let lockTimer, logoutTimer;
-    const resetTimers = () => {
+    const resetSecurityTimers = () => {
       clearTimeout(lockTimer);
       clearTimeout(logoutTimer);
       if (user) {
-        lockTimer = setTimeout(() => setIsLocked(true), 60000); // 60s Lock
+        lockTimer = setTimeout(() => setAppLocked(true), 60000); // 60s Lock
         logoutTimer = setTimeout(() => supabase.auth.signOut(), 1200000); // 20m Logout
       }
     };
-    window.addEventListener('mousemove', resetTimers);
-    window.addEventListener('mousedown', resetTimers);
-    resetTimers();
+    window.onmousemove = resetSecurityTimers;
+    window.onkeydown = resetSecurityTimers;
+    resetSecurityTimers();
 
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('mousemove', resetTimers);
-      window.removeEventListener('mousedown', resetTimers);
+      window.onmousemove = null;
+      window.onkeydown = null;
     };
   }, [user]);
 
@@ -98,12 +96,12 @@ export default function App() {
     window.location.reload()
   }
 
-  if (booting || isLoading) {
-    return <VaultLoader message="Welcome to TD Bank" />;
+  if (booting || isCheckingAuth) {
+    return <div className="loading-spinner">TD Global Securing Session...</div>;
   }
 
-  if (isLocked) {
-    return <SecurityLock onUnlock={() => setIsLocked(false)} />;
+  if (appLocked) {
+    return <SecurityLock onUnlock={() => setAppLocked(false)} />;
   }
 
   if (registering) {
