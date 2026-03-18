@@ -72,7 +72,7 @@ export default function AiSupport({ onClose }) {
 
   function sendMessage(text) {
     if (!text.trim()) return
-    const userMsg = { id: Date.now(), from: 'user', text: text.trim(), time: new Date() }
+    const userMsg = { id: Date.now(), from: 'profiles', text: text.trim(), time: new Date() }
     setMessages((prev) => [...prev, userMsg])
     setInput('')
     setTyping(true)

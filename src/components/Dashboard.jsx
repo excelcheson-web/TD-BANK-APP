@@ -187,7 +187,7 @@ const CameraIcon = () => (
   </svg>
 )
 
-export default function Dashboard({ user, onLogout }) {
+export default function Dashboard({ profile, onLogout }) {
   const [showReceipt, setShowReceipt] = useState(false)
   const [showTransferOtp, setShowTransferOtp] = useState(false)
   const [admin, setAdmin] = useState(getAdminData)
@@ -262,8 +262,8 @@ export default function Dashboard({ user, onLogout }) {
   const handleAdClick = useCallback((type) => {
     switch (type) {
       case 'refer': {
-        const refUser = user?.email ? encodeURIComponent(user.email.split('@')[0]) : 'USER'
-        const refLink = `https://tdbank-vault.netlify.app/signup?ref=${refUser}`
+        const refProfile = profile?.email ? encodeURIComponent(profile.email.split('@')[0]) : 'PROFILE'
+        const refLink = `https://tdbank-vault.netlify.app/signup?ref=${refProfile}`
         navigator.clipboard.writeText(refLink).then(() => {
           setAdToast('Referral Link Copied!')
           setTimeout(() => setAdToast(null), 3000)
@@ -282,7 +282,7 @@ export default function Dashboard({ user, onLogout }) {
       default:
         break
     }
-  }, [user])
+  }, [profile])
 
   // Check for pending notifications
   const checkNotifications = useCallback(() => {
@@ -386,7 +386,7 @@ export default function Dashboard({ user, onLogout }) {
   const balance = admin.balance || '0.00'
   const lastTxn = admin.lastTxnAmount || '0.00'
   const receiverName = admin.receiverName || 'N/A'
-  const accountNumber = user?.accountNumber || null
+  const accountNumber = profile?.accountNumber || null
   const maskedAcct = accountNumber ? `*${accountNumber.slice(-4)}` : ''
   const txnDate = admin.txnDate
     ? new Date(admin.txnDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -461,7 +461,7 @@ export default function Dashboard({ user, onLogout }) {
       )}
       {showTransferOtp && (
         <OtpModal
-          email={user?.email || 'user@tdbank.com'}
+          email={profile?.email || 'profile@tdbank.com'}
           variant="transfer"
           onVerified={() => { setShowTransferOtp(false); setShowReceipt(true) }}
           onCancel={() => setShowTransferOtp(false)}
@@ -485,7 +485,7 @@ export default function Dashboard({ user, onLogout }) {
       )}
       {showAccountInfo && (
         <AccountInfo
-          user={user}
+          profile={profile}
           balance={bankBalance}
           onClose={() => setShowAccountInfo(false)}
         />
@@ -581,15 +581,15 @@ export default function Dashboard({ user, onLogout }) {
         <div className="db-header-right">
           <div className="db-header-profile">
             <div className="db-profile-pic">
-              {user?.profilePic ? (
-                <img src={user.profilePic} alt="" className="db-profile-img" />
+              {profile?.profilePic ? (
+                <img src={profile.profilePic} alt="" className="db-profile-img" />
               ) : (
-                <span className="db-profile-initial">{(user?.name || 'U').charAt(0).toUpperCase()}</span>
+                <span className="db-profile-initial">{(profile?.name || 'P').charAt(0).toUpperCase()}</span>
               )}
             </div>
             <div className="db-header-profile-text">
-              <span className="db-header-title">{user?.name || 'User'}</span>
-              <span className="db-header-accttype">{localStorage.getItem('user_account_type') || user?.accountType || 'Savings Account'}</span>
+              <span className="db-header-title">{profile?.name || 'Profile'}</span>
+              <span className="db-header-accttype">{localStorage.getItem('user_account_type') || profile?.accountType || 'Savings Account'}</span>
             </div>
           </div>
         </div>
@@ -615,7 +615,7 @@ export default function Dashboard({ user, onLogout }) {
       {showGreeting && (
         <div className="db-greeting-banner">
           <span className="db-greeting-text">
-            Good {getTimeOfDay()}, {user?.name?.split(' ')[0] || 'there'}! Welcome to TD Bank
+            Good {getTimeOfDay()}, {profile?.name?.split(' ')[0] || 'there'}! Welcome to TD Bank
           </span>
         </div>
       )}
