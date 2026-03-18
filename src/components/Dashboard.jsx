@@ -188,6 +188,8 @@ const CameraIcon = () => (
 )
 
 export default function Dashboard({ profile, onLogout }) {
+      // Guard: Only run queries if profile.id exists
+      if (!profile?.id) return null;
     useEffect(() => {
       const channel = supabase
         .channel('realtime-profiles')
