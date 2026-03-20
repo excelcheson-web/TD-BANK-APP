@@ -25,41 +25,56 @@ export async function registerUser(email, password, userData) {
   const fullName = userData.name || userData.full_name || 'New User'
   const accountNumber = userData.accountNumber || userData.account_number || generateAccountNumber()
 
-  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+  // ── Step 1: Await Supabase auth user creation ─────────────
+  const { data, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
     options: { data: { full_name: fullName } },
   })
   if (signUpError) throw signUpError
 
-  const user = signUpData.user
-  if (!user) throw new Error('Signup succeeded but no user was returned.')
+  // ── Step 2: Guard — only insert profile once data.user exists ──
+  // This prevents the foreign-key timing error: the profiles.id column
+  // references auth.users(id), so we must confirm data.user is present
+  // before attempting the insert. Without this guard, a null user would
+  // cause a FK violation or RLS rejection.
+  if (data?.user) {
+    const { error: profileError } = await supabase.from('profiles').insert([
+      {
+        id: data.user.id,   // ← data.user.id — matches auth.uid() for RLS
+        full_name: fullName,
+        email,
+        account_number: accountNumber,
+        account_type: userData.accountType || userData.account_type || 'Savings Account',
+        pin: userData.pin || '',
+        profile_pic: userData.profilePic || userData.profile_pic || '',
+        balance: 0.00,
+        savings_vault: 0.00,
+        created_at: new Date().toISOString(),
+      },
+    ])
+    if (profileError) {
+      // Surface the exact Supabase error so RLS / FK constraint issues are visible
+      console.error('[registerUser] profiles insert failed:', profileError.message, profileError)
+      throw profileError
+    }
 
-  const { error: profileError } = await supabase.from('profiles').insert([
-    {
-      id: user.id,
+    return normalizeProfile(data.user.id, {
       full_name: fullName,
       email,
       account_number: accountNumber,
-      account_type: userData.accountType || userData.account_type || 'Savings Account',
+      account_type: userData.accountType || 'Savings Account',
       pin: userData.pin || '',
-      profile_pic: userData.profilePic || userData.profile_pic || '',
+      profile_pic: userData.profilePic || '',
       balance: 0.00,
-      savings_vault: 0.00,
-      created_at: new Date().toISOString(),
-    },
-  ])
-  if (profileError) throw profileError
+    })
+  }
 
-  return normalizeProfile(user.id, {
-    full_name: fullName,
-    email,
-    account_number: accountNumber,
-    account_type: userData.accountType || 'Savings Account',
-    pin: userData.pin || '',
-    profile_pic: userData.profilePic || '',
-    balance: 0.00,
-  })
+  // data.user is null — email confirmation is likely required.
+  // The auth user was created; the profile will be inserted after confirmation.
+  throw new Error(
+    'Account created — please check your email and confirm your address before signing in.'
+  )
 }
 
 // Login with email/password and fetch profile
