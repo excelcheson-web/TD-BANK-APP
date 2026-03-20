@@ -53,10 +53,22 @@ export default function App() {
     // getSession() reads the persisted token from localStorage (~0 ms,
     // no network round-trip needed). This resolves authLoading well
     // before the 5-second vault splash ends, eliminating the #310 flash.
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!initialResolved) {
         initialResolved = true
-        resolveAuth(session?.user || null)
+        if (error) {
+          // Stale / invalid refresh token (HTTP 400 "Refresh Token Not Found").
+          // signOut() wipes the bad token from localStorage so the error
+          // never appears again on the next page load.
+          supabase.auth.signOut().catch(() => {})
+          clearLocalStorage()
+          if (isMounted) {
+            setUser(null)
+            setAuthLoading(false)
+          }
+        } else {
+          resolveAuth(session?.user || null)
+        }
       }
     }).catch(() => {
       if (!initialResolved && isMounted) {
