@@ -153,6 +153,10 @@ export default function App() {
               pin: data.pin,
               profilePic: data.profilePic || '',
             })
+            // Wipe any previous user's data (transfer_history, notifications,
+            // balance etc.) before writing the new account's data so a fresh
+            // account always starts with an empty transaction history.
+            clearLocalStorage()
             localStorage.setItem('securebank_user', JSON.stringify(profile))
             localStorage.setItem('user_account_type', profile.accountType || data.accountType)
             localStorage.setItem('user_email', profile.email || data.email)
@@ -201,11 +205,23 @@ export default function App() {
   )
 }
 
-// Clear all auth-related localStorage keys on logout
+// Clear ALL user-specific localStorage keys on logout / account switch.
+// Every key that stores per-user data must be listed here so a new user
+// never sees a previous user's balance, transactions, or notifications.
 function clearLocalStorage() {
+  // Auth & profile
   localStorage.removeItem('securebank_user')
   localStorage.removeItem('user_account_type')
   localStorage.removeItem('user_email')
   localStorage.removeItem('user_name')
+  // Balance — must reset so new user starts at 0
+  localStorage.removeItem('bank_balance')
+  // Transaction history — the source of the "ghost transactions" bug
+  localStorage.removeItem('transfer_history')
+  // Notifications
+  localStorage.removeItem('securebank_notifications')
+  localStorage.removeItem('email_notifications_log')
+  // UI state
   localStorage.removeItem('privacy_state')
+  localStorage.removeItem('system_notification_dismissed')
 }
