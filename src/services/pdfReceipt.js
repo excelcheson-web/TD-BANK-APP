@@ -1,9 +1,9 @@
 import { jsPDF } from 'jspdf'
 
 const TD_GREEN = [0, 138, 0]       // #008a00
-const DARK = [31, 41, 55]           // gray-800
-const GRAY = [107, 114, 128]        // gray-500
-const LIGHT_GRAY = [229, 231, 235]  // gray-200
+const DARK = [0, 0, 0]             // #000000 — solid black for all body text
+const GRAY = [50, 50, 50]          // near-black for labels
+const LIGHT_GRAY = [229, 231, 235]  // gray-200 for dividers
 const WHITE = [255, 255, 255]
 
 // TD logo as base64 PNG for PDF watermark

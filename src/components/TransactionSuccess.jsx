@@ -72,73 +72,133 @@ export default function TransactionSuccess({
     transferType = 'local', // 'local' or 'international'
   } = data
 
+  const isIntl = transferType === 'international'
   const txnDate = date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+  // Solid black for all receipt text
+  const BLACK = '#000000'
+  const LABEL_STYLE = { color: BLACK, fontWeight: 500 }
+  const VALUE_STYLE = { color: BLACK }
 
   return (
     <div className={`txn-success-overlay ${animClass}`} onClick={onClose}>
       <div className={`txn-success ${animClass}`} onClick={(e) => e.stopPropagation()}>
-        {/* ── Green "Thank you" header ───────────────────── */}
-        <div className="txn-success-header">
-          <button className="txn-download-btn" title="Download PDF" onClick={() => generateTransferPDF({
-            type: transferType,
-            ref: confirmation,
-            beneficiary: toName,
-            amount: parseFloat(String(amount).replace(/[^0-9.]/g, '')) || 0,
-            date: date || new Date().toISOString(),
-            senderName: fromName,
-          })}>
+
+        {/* ── Header: colour-coded by transfer type ─────── */}
+        <div className={`txn-success-header ${isIntl ? 'txn-success-header--intl' : 'txn-success-header--local'}`}>
+          {/* PDF download button */}
+          <button
+            className="txn-download-btn"
+            title="Download PDF"
+            onClick={() => generateTransferPDF({
+              type: transferType,
+              ref: confirmation,
+              beneficiary: toName,
+              amount: parseFloat(String(amount).replace(/[^0-9.]/g, '')) || 0,
+              date: date || new Date().toISOString(),
+              senderName: fromName,
+            })}
+          >
             <DownloadIcon />
             <span>PDF</span>
           </button>
+
+          {/* Transfer type badge */}
+          <div className="txn-type-badge">
+            {isIntl ? '🌐 International Wire' : '⚡ Local Transfer'}
+          </div>
+
           <div className="txn-success-check"><CheckCircle /></div>
           <h2 className="txn-success-title">Thank you!</h2>
           <p className="txn-success-subtitle">Your transfer was successful.</p>
           <p className="txn-success-conf">Confirmation: {confirmation}</p>
         </div>
-        {/* ── Professional receipt body with watermark and logo ───── */}
-        <div className="txn-success-body">
-          <img src="/td-logo.png" alt="TD Logo" className="txn-receipt-watermark" draggable="false" />
+
+        {/* ── Receipt body — all text forced solid black ── */}
+        <div className="txn-success-body" style={{ color: BLACK, position: 'relative' }}>
+          {/* TD Global logo watermark — 0.05 opacity */}
+          <img
+            src="/td-logo.png"
+            alt=""
+            className="txn-receipt-watermark"
+            draggable="false"
+            style={{ opacity: 0.05, pointerEvents: 'none', userSelect: 'none' }}
+          />
+
           <div className="txn-row">
-            <span className="txn-label">Date</span>
-            <span className="txn-value">{txnDate}</span>
+            <span className="txn-label" style={LABEL_STYLE}>Date</span>
+            <span className="txn-value" style={VALUE_STYLE}>{txnDate}</span>
           </div>
           <div className="txn-divider" />
+
           <div className="txn-row">
-            <span className="txn-label">Transaction ID</span>
-            <span className="txn-value"><strong className="font-mono">{confirmation}</strong></span>
-          </div>
-          <div className="txn-divider" />
-          <div className="txn-row">
-            <span className="txn-label">Recipient</span>
-            <span className="txn-value"><strong>{toName}</strong></span>
-          </div>
-          <div className="txn-divider" />
-          <div className="txn-row">
-            <span className="txn-label">Sent Amount</span>
-            <span className="txn-value">
-              <strong className="font-mono txn-amount-highlight" style={{ color: '#000000' }}>{
-                typeof amount === 'string' ? amount.replace(/^-/, '') : Math.abs(Number(amount)).toLocaleString('en-US', { minimumFractionDigits: 2 })
-              }</strong>
+            <span className="txn-label" style={LABEL_STYLE}>Transaction ID</span>
+            <span className="txn-value" style={VALUE_STYLE}>
+              <strong className="font-mono" style={{ color: BLACK }}>{confirmation}</strong>
             </span>
           </div>
           <div className="txn-divider" />
+
           <div className="txn-row">
-            <span className="txn-label">Type</span>
-            <span className="txn-value">{type}</span>
-          </div>
-          <div className="txn-divider" />
-          <div className="txn-row">
-            <span className="txn-label">Status</span>
-            <span className="txn-value">
-              <span className="txn-status-badge">● Completed</span>
+            <span className="txn-label" style={LABEL_STYLE}>Transfer Type</span>
+            <span className="txn-value" style={VALUE_STYLE}>
+              {isIntl ? 'International Wire Transfer' : 'Local Transfer'}
             </span>
           </div>
-          {/* Receipt-specific text for transfer type */}
           <div className="txn-divider" />
-          {transferType === 'international' ? (
-            <div className="txn-row"><span className="txn-label" style={{color:'#008a00'}}>Note</span><span className="txn-value">International transfers may take up to 3 business days to arrive and may incur additional fees.</span></div>
+
+          <div className="txn-row">
+            <span className="txn-label" style={LABEL_STYLE}>Recipient</span>
+            <span className="txn-value" style={VALUE_STYLE}>
+              <strong style={{ color: BLACK }}>{toName}</strong>
+            </span>
+          </div>
+          <div className="txn-divider" />
+
+          <div className="txn-row">
+            <span className="txn-label" style={LABEL_STYLE}>Sent Amount</span>
+            <span className="txn-value">
+              <strong
+                className="font-mono txn-amount-highlight"
+                style={{ color: BLACK }}
+              >
+                {typeof amount === 'string'
+                  ? amount.replace(/^-/, '')
+                  : Math.abs(Number(amount)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </strong>
+            </span>
+          </div>
+          <div className="txn-divider" />
+
+          <div className="txn-row">
+            <span className="txn-label" style={LABEL_STYLE}>Type</span>
+            <span className="txn-value" style={VALUE_STYLE}>{type}</span>
+          </div>
+          <div className="txn-divider" />
+
+          <div className="txn-row">
+            <span className="txn-label" style={LABEL_STYLE}>Status</span>
+            <span className="txn-value">
+              <span className="txn-status-badge" style={{ color: '#008a00' }}>● Completed</span>
+            </span>
+          </div>
+          <div className="txn-divider" />
+
+          {/* Type-specific note */}
+          {isIntl ? (
+            <div className="txn-row">
+              <span className="txn-label" style={{ color: '#008a00', fontWeight: 600 }}>Note</span>
+              <span className="txn-value" style={{ color: BLACK, fontSize: '0.82rem' }}>
+                International wire transfers may take 1–3 business days to arrive and may incur additional fees.
+              </span>
+            </div>
           ) : (
-            <div className="txn-row"><span className="txn-label" style={{color:'#008a00'}}>Note</span><span className="txn-value">Local transfers are usually available instantly.</span></div>
+            <div className="txn-row">
+              <span className="txn-label" style={{ color: '#008a00', fontWeight: 600 }}>Note</span>
+              <span className="txn-value" style={{ color: BLACK, fontSize: '0.82rem' }}>
+                Local transfers are processed instantly and available in the recipient's account right away.
+              </span>
+            </div>
           )}
         </div>
 

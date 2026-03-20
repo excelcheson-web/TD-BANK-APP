@@ -512,7 +512,7 @@ export default function Dashboard({ profile, onLogout }) {
       )}
       {showBankCard && (
         <BankCard
-          user={user}
+          user={profile}
           onClose={() => setShowBankCard(false)}
         />
       )}
@@ -597,11 +597,11 @@ export default function Dashboard({ profile, onLogout }) {
               {profile?.profilePic ? (
                 <img src={profile.profilePic} alt="" className="db-profile-img" />
               ) : (
-                <span className="db-profile-initial">{(profile?.name || 'P').charAt(0).toUpperCase()}</span>
+                <span className="db-profile-initial">{(profile?.name || profile?.full_name || 'P').charAt(0).toUpperCase()}</span>
               )}
             </div>
             <div className="db-header-profile-text">
-              <span className="db-header-title">{profile?.name || 'Profile'}</span>
+              <span className="db-header-title">{profile?.name || profile?.full_name || 'Profile'}</span>
               <span className="db-header-accttype">{localStorage.getItem('user_account_type') || profile?.accountType || 'Savings Account'}</span>
             </div>
           </div>
@@ -628,7 +628,7 @@ export default function Dashboard({ profile, onLogout }) {
       {showGreeting && (
         <div className="db-greeting-banner">
           <span className="db-greeting-text">
-            Good {getTimeOfDay()}, {profile?.name?.split(' ')[0] || 'there'}! Welcome to TD Bank
+            Good {getTimeOfDay()}, {(profile?.name || profile?.full_name)?.split(' ')[0] || 'there'}! Welcome to TD Bank
           </span>
         </div>
       )}
