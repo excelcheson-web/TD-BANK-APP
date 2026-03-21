@@ -32,8 +32,19 @@
 - [x] US + Canadian bank addresses in footer
 - [x] Centered watermark logo
 
+## Bug Fix: formatCurrency TypeError ✅
+- [x] `src/components/LocalTransfer.jsx` — `(n ?? 0).toLocaleString(...)` 
+- [x] `src/components/InternationalTransfer.jsx` — same fix
+- [x] `src/components/AccountInfo.jsx` — same fix
+- [x] `src/components/DepositOverlay.jsx` — same fix
+- [x] `src/components/ScheduledTransfer.jsx` — same fix
+- [x] `src/components/BillPayment.jsx` — same fix
+- [x] `src/components/Investment.jsx` — same fix (`fmt` function)
+- Root cause: `bankBalance` initialized as `useState(null)` in Dashboard, passed to child components where `formatCurrency(null)` crashed
+
 ## Follow-up
 - [ ] Test registration end-to-end (new user appears in Firebase with email)
 - [ ] Test login with registered email/password
 - [ ] Test language switching in Dashboard
 - [ ] Test PDF receipt generation (clear text, watermark, addresses)
+- [x] Fix formatCurrency null crash in transfer/payment components
