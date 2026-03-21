@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import ReCAPTCHA from 'react-google-recaptcha'
 import VaultLoader from './VaultLoader'
 import TDLogo from './TDLogo'
-import { loginUser } from '../services/supabaseAuth'
+import { loginUser } from '../services/firebaseAuth'
 
 /* ── Inline SVG icons ────────────────────────────────────── */
 
@@ -60,6 +61,12 @@ export default function LoginScreen({ onLogin, onRegister }) {
   const [forgotStep, setForgotStep] = useState('email') // email | reset | done
   const [newPin, setNewPin] = useState('')
   const [forgotError, setForgotError] = useState('')
+  // reCAPTCHA is only active when the site key env var is provided.
+  // On localhost (no VITE_RECAPTCHA_SITE_KEY), skip it entirely so the
+  // missing-sitekey error never crashes the React tree.
+  const RECAPTCHA_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''
+  const [recaptchaToken, setRecaptchaToken] = useState(RECAPTCHA_KEY ? null : 'dev-bypass')
+  const recaptchaRef = useRef(null)
 
   const getStoredUser = () => {
     try { return JSON.parse(localStorage.getItem('securebank_user') || 'null') } catch { return null }
@@ -94,6 +101,9 @@ export default function LoginScreen({ onLogin, onRegister }) {
     } catch (err) {
       setLoading(false)
       setLoadingMsg('')
+      // Reset reCAPTCHA so user can try again
+      recaptchaRef.current?.reset()
+      setRecaptchaToken(null)
       console.log('Login error:', err.code, err.message)
       const code = err.code || ''
       if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
@@ -256,6 +266,19 @@ export default function LoginScreen({ onLogin, onRegister }) {
             <a href="#forgot" className="login-forgot" onClick={openForgot}>Forgot password?</a>
           </div>
 
+          {/* reCAPTCHA — only rendered when site key is configured */}
+          {RECAPTCHA_KEY && (
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={RECAPTCHA_KEY}
+                theme="dark"
+                onChange={(token) => setRecaptchaToken(token)}
+                onExpired={() => setRecaptchaToken(null)}
+              />
+            </div>
+          )}
+
           {/* Error message */}
           {error && <p className="login-error">{error}</p>}
 
@@ -263,7 +286,7 @@ export default function LoginScreen({ onLogin, onRegister }) {
           <button
             type="submit"
             className="login-btn"
-            disabled={loading}
+            disabled={loading || !recaptchaToken}
           >
             {loading ? (
               <span className="login-spinner" />

@@ -1,8 +1,10 @@
-# Fix OnboardingFlow.jsx White Screen Bug + Firebase Auth Issues
+# Fix Netlify Deploy - Untracked Firebase Files
 
 ## Steps
-- [x] Remove git merge conflict markers and duplicated code from `src/components/OnboardingFlow.jsx`
-- [x] Verify the app loads — Vite compiles successfully with no errors
-- [x] Create `.env.example` template with required environment variables
-- [x] Add try/catch around localStorage calls in `App.jsx` to handle QuotaExceededError
-- [ ] User action: Create `.env` file with actual Firebase API key
+- [x] Diagnose build failure: `firebaseAuth.js` and `firebaseClient.js` untracked by git
+- [x] Verify files exist locally and are valid
+- [x] Check full git status for all uncommitted changes
+- [ ] Stage all changes (git add -A)
+- [ ] Commit with descriptive message
+- [ ] Push to remote branch
+- [ ] Verify Netlify build succeeds

@@ -2493,7 +2493,7 @@ a { color: inherit; text-decoration: none; }
   transform: translate(-50%, -50%);
   width: 220px;
   height: 220px;
-  background: url('/greenhills-logo.png') center / contain no-repeat;
+  background: url('/td-logo.png') center / contain no-repeat;
   opacity: 0.05;
   pointer-events: none;
 }
