@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import VaultLoader from './components/VaultLoader'
 import LoginScreen from './components/LoginScreen'
 import OnboardingFlow from './components/OnboardingFlow'
@@ -14,6 +14,12 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true)
   const [registering, setRegistering] = useState(false)
 
+  // Flag to prevent onAuthStateChanged from interfering during registration.
+  // When registerUser() calls createUserWithEmailAndPassword, onAuthStateChanged
+  // fires immediately — before setDoc writes the profile. Without this guard the
+  // callback sees no profile and signs the user out, causing a race condition.
+  const isRegisteringRef = useRef(false)
+
   // ── Firebase auth state listener ─────────────────────────
   // onAuthStateChanged fires immediately with the persisted session (or null).
   // We wait for that first callback before rendering any screen.
@@ -25,8 +31,31 @@ export default function App() {
     const unsub = onAuthChange(async (firebaseUser) => {
       try {
         if (firebaseUser) {
+          // Skip profile fetch while registration is in progress — the profile
+          // hasn't been written to Firestore yet at this point.
+          if (isRegisteringRef.current) {
+            clearTimeout(safetyTimer)
+            setAuthLoading(false)
+            return
+          }
+
           // User is signed in — fetch their Firestore profile
-          const profile = await getUserProfile(firebaseUser.uid)
+          let profile = await getUserProfile(firebaseUser.uid)
+
+          // Fallback: if Firestore is unavailable, try localStorage
+          if (!profile) {
+            try {
+              const cached = localStorage.getItem('securebank_user')
+              if (cached) {
+                const parsed = JSON.parse(cached)
+                if (parsed.uid === firebaseUser.uid) {
+                  console.log('[App] Using cached profile from localStorage')
+                  profile = parsed
+                }
+              }
+            } catch { /* silent */ }
+          }
+
           if (profile) {
             setUser(profile)
             try {
@@ -45,7 +74,7 @@ export default function App() {
               console.warn('[App] localStorage write failed (quota?):', storageErr.message)
             }
           } else {
-            // Auth token exists but no Firestore profile — sign out cleanly
+            // Auth token exists but no profile anywhere — sign out cleanly
             try { await logoutUser() } catch { /* silent */ }
             clearLocalStorage()
             setUser(null)
@@ -86,6 +115,10 @@ export default function App() {
       <OnboardingFlow
         onComplete={async (data) => {
           try {
+            // Set flag BEFORE calling registerUser so onAuthStateChanged
+            // knows not to interfere while the profile is being written.
+            isRegisteringRef.current = true
+
             const profile = await registerUser({
               email: data.email,
               password: data.password,
@@ -115,8 +148,20 @@ export default function App() {
             }
             setUser(profile)
             setRegistering(false)
+            isRegisteringRef.current = false
           } catch (err) {
-            alert(err.message)
+            isRegisteringRef.current = false
+            // Show user-friendly error messages for common Firebase Auth errors
+            const code = err.code || ''
+            if (code === 'auth/email-already-in-use') {
+              alert('This email is already registered. Please sign in instead, or use a different email.')
+            } else if (code === 'auth/invalid-email') {
+              alert('Please enter a valid email address.')
+            } else if (code === 'auth/weak-password') {
+              alert('Password is too weak. Please use at least 6 characters.')
+            } else {
+              alert(err.message || 'Registration failed. Please try again.')
+            }
           }
         }}
       />
