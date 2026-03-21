@@ -65,10 +65,11 @@ export default function App() {
                 lsProfile.profilePic = ''
                 lsProfile.profile_pic = ''
               }
-              localStorage.setItem('securebank_user',   JSON.stringify(lsProfile))
-              localStorage.setItem('user_account_type', profile.accountType || '')
-              localStorage.setItem('user_email',        profile.email || firebaseUser.email || '')
-              localStorage.setItem('user_name',         profile.full_name   || '')
+              localStorage.setItem('securebank_user',      JSON.stringify(lsProfile))
+              localStorage.setItem('user_account_type',    profile.accountType    || '')
+              localStorage.setItem('user_email',           profile.email          || firebaseUser.email || '')
+              localStorage.setItem('user_name',            profile.full_name      || profile.name || '')
+              localStorage.setItem('user_account_number',  profile.accountNumber  || profile.account_number || '')
               // ── CRITICAL: Never overwrite a higher localStorage balance with
               // a lower Firestore value. Admin credits may not have synced to
               // Firestore yet (App Check blocking on localhost), so we keep
@@ -147,10 +148,11 @@ export default function App() {
                 lsProfile.profilePic = ''
                 lsProfile.profile_pic = ''
               }
-              localStorage.setItem('securebank_user', JSON.stringify(lsProfile))
-              localStorage.setItem('user_account_type', profile.accountType || data.accountType)
-              localStorage.setItem('user_email', profile.email || data.email)
-              localStorage.setItem('user_name', profile.name || data.fullName)
+              localStorage.setItem('securebank_user',     JSON.stringify(lsProfile))
+              localStorage.setItem('user_account_type',   profile.accountType   || data.accountType)
+              localStorage.setItem('user_email',          profile.email         || data.email)
+              localStorage.setItem('user_name',           profile.name          || data.fullName)
+              localStorage.setItem('user_account_number', profile.accountNumber || profile.account_number || '')
               localStorage.setItem('bank_balance', '0')
             } catch (storageErr) {
               console.warn('[App] localStorage write failed (quota?):', storageErr.message)
@@ -188,10 +190,11 @@ export default function App() {
               lsUser.profilePic = ''
               lsUser.profile_pic = ''
             }
-            localStorage.setItem('securebank_user', JSON.stringify(lsUser))
-            localStorage.setItem('user_account_type', u.accountType || 'Savings Account')
-            localStorage.setItem('user_email', u.email || '')
-            localStorage.setItem('user_name', u.name || u.full_name || '')
+            localStorage.setItem('securebank_user',     JSON.stringify(lsUser))
+            localStorage.setItem('user_account_type',   u.accountType   || 'Savings Account')
+            localStorage.setItem('user_email',          u.email         || '')
+            localStorage.setItem('user_name',           u.name          || u.full_name || '')
+            localStorage.setItem('user_account_number', u.accountNumber || u.account_number || '')
             localStorage.setItem('bank_balance', String(u.balance ?? 0))
           } catch (storageErr) {
             console.warn('[App] localStorage write failed (quota?):', storageErr.message)
@@ -225,6 +228,7 @@ function clearLocalStorage() {
   localStorage.removeItem('user_account_type')
   localStorage.removeItem('user_email')
   localStorage.removeItem('user_name')
+  localStorage.removeItem('user_account_number')
   // Balance — must reset so new user starts at 0
   localStorage.removeItem('bank_balance')
   // Transaction history — the source of the "ghost transactions" bug

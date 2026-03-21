@@ -676,11 +676,11 @@ export default function Dashboard({ profile, onLogout }) {
               {profile?.profilePic ? (
                 <img src={profile.profilePic} alt="" className="db-profile-img" />
               ) : (
-                <span className="db-profile-initial">{(profile?.name || profile?.full_name || 'P').charAt(0).toUpperCase()}</span>
+              <span className="db-profile-initial">{(profile?.name || profile?.full_name || localStorage.getItem('user_name') || 'P').charAt(0).toUpperCase()}</span>
               )}
             </div>
             <div className="db-header-profile-text">
-              <span className="db-header-title">{profile?.name || profile?.full_name || 'Profile'}</span>
+              <span className="db-header-title">{profile?.name || profile?.full_name || localStorage.getItem('user_name') || 'Profile'}</span>
               <span className="db-header-accttype">{localStorage.getItem('user_account_type') || profile?.accountType || 'Savings Account'}</span>
             </div>
           </div>
@@ -707,7 +707,7 @@ export default function Dashboard({ profile, onLogout }) {
       {showGreeting && (
         <div className="db-greeting-banner">
           <span className="db-greeting-text">
-            {t(`good${getTimeOfDay().charAt(0).toUpperCase() + getTimeOfDay().slice(1)}`)}, {(profile?.name || profile?.full_name)?.split(' ')[0] || 'there'}! {t('welcomeToTD')}
+          {t(`good${getTimeOfDay().charAt(0).toUpperCase() + getTimeOfDay().slice(1)}`)}, {(profile?.name || profile?.full_name || localStorage.getItem('user_name'))?.split(' ')[0] || 'there'}! {t('welcomeToTD')}
           </span>
         </div>
       )}

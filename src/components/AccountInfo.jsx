@@ -16,14 +16,25 @@ function formatCurrency(n) {
   return (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export default function AccountInfo({ user, balance, onClose }) {
+export default function AccountInfo({ user, profile, balance, onClose }) {
   const [copied, setCopied] = useState(null)
 
-  const name = user?.name || 'Account Holder'
-  const email = user?.email || '—'
-  const accountNumber = user?.accountNumber || '—'
+  // Accept either `user` or `profile` prop (Dashboard passes `profile`)
+  const p = user || profile
+
+  const name = p?.name || p?.full_name
+    || localStorage.getItem('user_name')
+    || 'Account Holder'
+  const email = p?.email
+    || localStorage.getItem('user_email')
+    || '—'
+  const accountNumber = p?.accountNumber || p?.account_number
+    || localStorage.getItem('user_account_number')
+    || '—'
   const routingNumber = '031101266'
-  const accountType = user?.accountType || localStorage.getItem('user_account_type') || 'Savings Account'
+  const accountType = p?.accountType || p?.account_type
+    || localStorage.getItem('user_account_type')
+    || 'Savings Account'
   const bankName = 'TD Bank, N.A.'
   const swiftCode = 'TDOMUS33'
 

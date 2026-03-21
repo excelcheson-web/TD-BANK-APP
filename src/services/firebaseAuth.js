@@ -129,9 +129,11 @@ export async function loginUser(email, password) {
   // This handles the case where Firestore is unavailable (App Check / timeout)
   // AND localStorage has no cached profile (different browser, cleared storage).
   console.warn('[loginUser] No Firestore or localStorage profile — constructing from auth user')
+  // Prefer the stored user_name (set during registration) over the email prefix
+  const storedName = (() => { try { return localStorage.getItem('user_name') || '' } catch { return '' } })()
   const fallbackProfile = normalizeProfile(user.uid, {
     email:         user.email || email,
-    full_name:     user.displayName || email.split('@')[0] || 'User',
+    full_name:     user.displayName || storedName || email.split('@')[0] || 'User',
     accountNumber: generateAccountNumber(),
     accountType:   'Savings Account',
     balance:       0,
