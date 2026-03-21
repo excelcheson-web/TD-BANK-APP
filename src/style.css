@@ -7077,6 +7077,63 @@ button:active {
 .db--light .db-logo-menu-divider {
   background: rgba(0,0,0,0.08);
 }
+
+/* ── Language Picker (inside logo menu) ──────────────────── */
+.db-lang-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  margin: 2px 0;
+}
+.db-lang-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255,255,255,0.8);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  width: calc(50% - 2px);
+}
+.db-lang-option:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+.db-lang-option--active {
+  background: rgba(0,166,81,0.25);
+  color: #00a651;
+  font-weight: 600;
+}
+.db-lang-flag {
+  font-size: 1.1rem;
+}
+.db-lang-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Light mode overrides */
+.db--light .db-lang-picker {
+  background: rgba(0,0,0,0.04);
+}
+.db--light .db-lang-option {
+  color: rgba(0,0,0,0.7);
+}
+.db--light .db-lang-option:hover {
+  background: rgba(0,0,0,0.06);
+  color: #000;
+}
+.db--light .db-lang-option--active {
+  background: rgba(0,166,81,0.12);
+  color: #00a651;
+}
 .db--light .db-logo-menu-item--logout {
   color: #dc2626;
 }

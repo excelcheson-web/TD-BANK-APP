@@ -55,8 +55,7 @@ const CheckCircle = () => (
 
 const STEPS = [
   { num: 1, label: 'Identity', icon: <UserIcon /> },
-  { num: 2, label: 'KYC',      icon: <ShieldIcon /> },
-  { num: 3, label: 'Security',  icon: <LockIcon /> },
+  { num: 2, label: 'Security', icon: <LockIcon /> },
 ]
 
 export default function OnboardingFlow({ onComplete }) {
@@ -97,8 +96,8 @@ export default function OnboardingFlow({ onComplete }) {
   }
 
   const next = () => {
-    // No OTP required during signup — proceed directly
-    if (step < 3) goTo(step + 1)
+    // Skip KYC — go straight from Identity (1) to Security (2)
+    if (step < 2) goTo(step + 1)
   }
 
   const prev = () => {
@@ -169,9 +168,7 @@ export default function OnboardingFlow({ onComplete }) {
   const canNext = (
     step === 1
       ? fullName.trim() && dob && isValidEmail(email) && password.length >= 6 && password === confirmPassword
-      : step === 2
-        ? true
-        : pin.join('').length === 6 && confirmPin.join('').length === 6
+      : pin.join('').length === 6 && confirmPin.join('').length === 6
   );
 
   /* ── Step content ───────────────────────────────────────── */
@@ -184,7 +181,7 @@ export default function OnboardingFlow({ onComplete }) {
           <UserIcon />
         </div>
         <h2 className="ob-step-title">Identity Details</h2>
-        <p className="ob-step-desc">Let&apos;s get to know you</p>
+        <p className="ob-step-desc">Let&#39;s get to know you</p>
 
         <div className="ob-field">
           <label className="ob-label" htmlFor="ob-name">Full Name</label>
@@ -310,45 +307,8 @@ export default function OnboardingFlow({ onComplete }) {
       </div>
     )
 
-    if (step === 2) return (
-      <div className={animClass} key="step2">
-        <div className="ob-step-icon-wrap">
-          <ShieldIcon />
-        </div>
-        <h2 className="ob-step-title">Digital Signature &amp; KYC</h2>
-        <p className="ob-step-desc">Upload a valid ID for verification</p>
-
-        <div className="ob-upload-zone" onClick={() => fileRef.current?.click()}>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*,.pdf"
-            className="ob-file-hidden"
-            onChange={(e) => setIdFile(e.target.files[0] || null)}
-          />
-          {idFile ? (
-            <div className="ob-upload-done">
-              <CheckCircle />
-              <span className="ob-upload-filename">{idFile.name}</span>
-              <span className="ob-upload-change">Tap to change</span>
-            </div>
-          ) : (
-            <div className="ob-upload-placeholder">
-              <UploadIcon />
-              <span className="ob-upload-text">Upload ID Document</span>
-              <span className="ob-upload-hint">Passport, Driver&apos;s License or National&nbsp;ID</span>
-            </div>
-          )}
-        </div>
-
-        <p className="ob-optional-note">
-          This step is optional — you can skip and upload later.
-        </p>
-      </div>
-    )
-
     return (
-      <div className={animClass} key="step3">
+      <div className={animClass} key="step2">
         <div className="ob-step-icon-wrap">
           <LockIcon />
         </div>
@@ -435,7 +395,7 @@ export default function OnboardingFlow({ onComplete }) {
               <span className={`ob-progress-label ${step >= s.num ? 'ob-progress-label--active' : ''}`}>
                 {s.label}
               </span>
-              {s.num < 3 && (
+              {s.num < 2 && (
                 <div className={`ob-progress-line ${step > s.num ? 'ob-progress-line--done' : ''}`} />
               )}
             </div>
@@ -456,7 +416,7 @@ export default function OnboardingFlow({ onComplete }) {
           ) : (
             <div />
           )}
-          {step < 3 ? (
+          {step < 2 ? (
             <button
               className="ob-nav-btn ob-nav-btn--next"
               type="button"

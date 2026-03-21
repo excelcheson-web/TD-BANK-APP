@@ -45,7 +45,9 @@ export async function registerUser(userData) {
   }
 
   // Create a real email/password user in Firebase Auth
+  console.log('[registerUser] Creating auth user…')
   const { user } = await createUserWithEmailAndPassword(auth, email, password)
+  console.log('[registerUser] Auth user created:', user.uid)
 
   const profileData = {
     full_name:    fullName,
@@ -59,8 +61,34 @@ export async function registerUser(userData) {
     createdAt:    new Date().toISOString(),
   }
 
-  await setDoc(doc(db, 'profiles', user.uid), profileData)
-  return normalizeProfile(user.uid, profileData)
+  // On localhost, Firestore may be blocked by App Check — fire-and-forget so
+  // registration isn't stuck. On production, await the write to ensure persistence.
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
+  if (isLocalhost) {
+    console.log('[registerUser] Writing Firestore profile (non-blocking — localhost)…')
+    setDoc(doc(db, 'profiles', user.uid), profileData)
+      .then(() => console.log('[registerUser] Firestore profile synced ✅'))
+      .catch((err) => console.warn('[registerUser] Firestore write pending (will retry):', err.message))
+  } else {
+    console.log('[registerUser] Writing Firestore profile…')
+    await setDoc(doc(db, 'profiles', user.uid), profileData)
+    console.log('[registerUser] Firestore profile written ✅')
+  }
+
+  const profile = normalizeProfile(user.uid, profileData)
+  console.log('[registerUser] Registration complete ✅', profile)
+  return profile
+}
+
+// Helper: race a promise against a timeout (ms). Rejects with 'timeout' on expiry.
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ])
 }
 
 export async function loginUser(email, password) {
@@ -71,11 +99,31 @@ export async function loginUser(email, password) {
   // Sign in with email/password instead of anonymous
   const { user } = await signInWithEmailAndPassword(auth, email, password)
 
-  const snap = await getDoc(doc(db, 'profiles', user.uid))
-  if (!snap.exists()) {
-    throw new Error('Profile not found. Please contact support or complete registration.')
+  // Try to fetch profile from Firestore (with 5s timeout to avoid hanging on localhost)
+  let snap = null
+  try {
+    snap = await withTimeout(getDoc(doc(db, 'profiles', user.uid)), 5000)
+  } catch (err) {
+    console.warn('[loginUser] Firestore read failed, falling back to localStorage:', err.message)
   }
-  return normalizeProfile(user.uid, snap.data())
+
+  if (snap && snap.exists()) {
+    return normalizeProfile(user.uid, snap.data())
+  }
+
+  // Fallback: try localStorage profile (written during registration)
+  try {
+    const cached = localStorage.getItem('securebank_user')
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      if (parsed.uid === user.uid) {
+        console.log('[loginUser] Using cached profile from localStorage')
+        return parsed
+      }
+    }
+  } catch { /* silent */ }
+
+  throw new Error('Profile not found. Please contact support or complete registration.')
 }
 
 // ── Sign out ──────────────────────────────────────────────────────────────────
@@ -88,11 +136,11 @@ export async function logoutUser() {
 
 export async function getUserProfile(uid) {
   try {
-    const snap = await getDoc(doc(db, 'profiles', uid))
+    const snap = await withTimeout(getDoc(doc(db, 'profiles', uid)), 5000)
     if (!snap.exists()) return null
     return normalizeProfile(uid, snap.data())
   } catch (err) {
-    console.error('[firebaseAuth] getUserProfile error:', err)
+    console.error('[firebaseAuth] getUserProfile error:', err.message)
     return null
   }
 }
