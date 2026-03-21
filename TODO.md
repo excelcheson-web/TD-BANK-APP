@@ -1,12 +1,14 @@
-# TD Global → Supabase Migration TODO
+# Fix Firebase Email/Password Authentication
 
-## Steps
+## Plan
+- [x] **`src/services/firebaseClient.js`** — Add App Check debug token for localhost
+- [x] **`src/services/firebaseAuth.js`** — Replace `signInAnonymously` with `createUserWithEmailAndPassword` / `signInWithEmailAndPassword`; add `email` to `normalizeProfile`
+- [x] **`src/components/OnboardingFlow.jsx`** — Add email, password & confirmPassword fields to registration Step 1
+- [x] **`src/App.jsx`** — Pass email & password from onboarding data to `registerUser()`
+- [x] **Build** — Verified `npm run build` succeeds with zero errors
 
-- [x] 1. Update `src/services/supabaseClient.js` — Add session persistence options
-- [x] 2. Update `src/services/supabaseAuth.js` — Fix onAuthChange, registerUser field names, profile normalization
-- [x] 3. Update `src/App.jsx` — Fix uid→id, prop name user→profile, unsubscribe, loading state, logout cleanup
-- [x] 4. Update `src/components/Dashboard.jsx` — Fix BankCard prop, profile name fallback
-- [x] 5. Update `src/components/TransactionSuccess.jsx` — Black text, watermark opacity, Local/Intl distinction
-- [x] 6. Update `src/services/pdfReceipt.js` — Solid black text colors
-
-## All steps completed ✓
+## Follow-up (Manual Steps)
+- [ ] Ensure "Email/Password" sign-in method is enabled in Firebase Console → Authentication → Sign-in method
+- [ ] Test registration flow end-to-end
+- [ ] Verify new users appear in Firebase Auth console with email (envelope icon)
+- [ ] Verify login works with registered email/password

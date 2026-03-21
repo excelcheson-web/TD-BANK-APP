@@ -16,8 +16,9 @@ import TransactionHistory from './TransactionHistory'
 import FinancialServices from './FinancialServices'
 import CryptoPage from './CryptoPage'
 import TDLogo from './TDLogo'
-import { updateUserProfile, logoutUser } from '../services/supabaseAuth'
-import { supabase } from '../services/supabaseClient'
+import { updateUserProfile, logoutUser } from '../services/firebaseAuth'
+import { db } from '../services/firebaseClient'
+import { doc, getDoc } from 'firebase/firestore'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -188,19 +189,6 @@ const CameraIcon = () => (
 )
 
 export default function Dashboard({ profile, onLogout }) {
-    useEffect(() => {
-      const channel = supabase
-        .channel('realtime-profiles')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
-          console.log('Change received!', payload);
-          // TODO: Trigger a re-fetch or state update here
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }, []);
   const [showReceipt, setShowReceipt] = useState(false)
   const [showTransferOtp, setShowTransferOtp] = useState(false)
   const [admin, setAdmin] = useState(getAdminData)
@@ -210,9 +198,10 @@ export default function Dashboard({ profile, onLogout }) {
   const [activeNav, setActiveNav] = useState('home')
   const [showCrypto, setShowCrypto] = useState(false)
   const [notification, setNotification] = useState(null)
-  const [bankBalance, setBankBalance] = useState(() => {
-    return parseFloat(localStorage.getItem('bank_balance') || '0')
-  })
+  // Balance: null = not yet fetched, number = loaded, 'error' = fetch failed
+  const [bankBalance, setBankBalance] = useState(null)
+  const [balanceLoading, setBalanceLoading] = useState(true)
+  const [balanceError, setBalanceError] = useState(false)
   const [savingsVault, setSavingsVault] = useState(0)
   const [showIntlTransfer, setShowIntlTransfer] = useState(false)
   const [showLocalTransfer, setShowLocalTransfer] = useState(false)
@@ -241,6 +230,38 @@ export default function Dashboard({ profile, onLogout }) {
   const logoMenuRef = useRef(null)
   const wealthRef = useRef(null)
   const loadingTimerRef = useRef(null)
+
+  // ── Fetch real balance from Firestore ─────────────────────
+  // Extracted as useCallback so it can be called on mount AND
+  // on window focus (tab switch / return) to stay up-to-date.
+  const fetchBalance = useCallback(async () => {
+    const uid = profile?.uid || profile?.id
+    if (!uid) { setBalanceLoading(false); return }
+    setBalanceLoading(true)
+    setBalanceError(false)
+    try {
+      const snap = await getDoc(doc(db, 'profiles', uid))
+      if (snap.exists()) {
+        const data = snap.data()
+        const fetched = parseFloat(data.balance ?? 0)
+        const vault   = parseFloat(data.savingsVault ?? data.savings_vault ?? 0)
+        setBankBalance(fetched)
+        setSavingsVault(vault)
+        // Keep localStorage in sync so transfer components can read it
+        localStorage.setItem('bank_balance', String(fetched))
+      }
+    } catch (err) {
+      console.error('[Dashboard] fetchBalance failed:', err)
+      // Do NOT fall back to 0 — show an explicit error so the user
+      // knows it's a connection issue, not an empty account.
+      setBalanceError(true)
+    } finally {
+      setBalanceLoading(false)
+    }
+  }, [profile?.uid, profile?.id])
+
+  // Call on mount
+  useEffect(() => { fetchBalance() }, [fetchBalance])
 
   /** Show a brief loading spinner, then execute the action */
   const openWithLoading = useCallback((action) => {
@@ -363,7 +384,7 @@ export default function Dashboard({ profile, onLogout }) {
     return () => window.removeEventListener('storage', onStorage)
   }, [checkNotifications, checkSysAlert])
 
-  // Real-time sync and cloud push logic removed for Supabase migration
+  // Real-time sync and cloud push logic removed
 
   // Email-sent toast listener
   useEffect(() => {
@@ -390,11 +411,12 @@ export default function Dashboard({ profile, onLogout }) {
       setAdmin(getAdminData())
       checkNotifications()
       checkSysAlert()
-      setBankBalance(parseFloat(localStorage.getItem('bank_balance') || '0'))
+      // Re-fetch from Firebase on tab focus so balance is always current
+      fetchBalance()
     }
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
-  }, [checkNotifications])
+  }, [checkNotifications, fetchBalance])
 
   const balance = admin.balance || '0.00'
   const lastTxn = admin.lastTxnAmount || '0.00'
@@ -648,9 +670,28 @@ export default function Dashboard({ profile, onLogout }) {
           </div>
           <div className="db-balance-amount font-mono">
             <div className={`db-balance-reveal ${balanceHidden ? 'db-balance-reveal--hidden' : ''}`}>
-              {balanceHidden
-                ? <span className="db-balance-masked">$****.**</span>
-                : <AnimatedBalance value={bankBalance} />}
+              {balanceHidden ? (
+                <span className="db-balance-masked">$****.**</span>
+              ) : balanceLoading ? (
+                /* Skeleton pulse — prevents $0.00 flash while fetching */
+                <span className="db-balance-skeleton" style={{
+                  display: 'inline-block', width: '160px', height: '2.2rem',
+                  borderRadius: '6px', background: 'rgba(255,255,255,0.15)',
+                  animation: 'db-pulse 1.4s ease-in-out infinite',
+                }} />
+              ) : balanceError ? (
+                /* Explicit error — never show $0.00 for a connection issue */
+                <span style={{
+                  color: '#ff6b6b', fontSize: '0.95rem', fontWeight: 600,
+                  letterSpacing: '0.01em',
+                }}>
+                  Unable to load balance
+                </span>
+              ) : (
+                <span style={{ color: '#000000' }}>
+                  <AnimatedBalance value={bankBalance ?? 0} />
+                </span>
+              )}
             </div>
           </div>
 
@@ -680,12 +721,22 @@ export default function Dashboard({ profile, onLogout }) {
         <div className="db-accounts-row">
           <div className="db-account-card db-account-card--green">
             <span className="db-account-type">Current Account</span>
-            <p className="db-account-bal font-mono"><AnimatedBalance value={bankBalance} /></p>
+            <p className="db-account-bal font-mono" style={{ color: '#000000' }}>
+              {balanceLoading
+                ? <span style={{ opacity: 0.5, fontSize: '0.85rem' }}>Loading…</span>
+                : balanceError
+                  ? <span style={{ color: '#ff6b6b', fontSize: '0.8rem' }}>Unavailable</span>
+                  : <AnimatedBalance value={bankBalance ?? 0} />}
+            </p>
             {accountNumber && <span className="db-account-num">●●●● {accountNumber.slice(-4)}</span>}
           </div>
           <div className="db-account-card db-account-card--dark">
             <span className="db-account-type">Savings Vault</span>
-            <p className="db-account-bal font-mono"><AnimatedBalance value={savingsVault} /></p>
+            <p className="db-account-bal font-mono" style={{ color: '#000000' }}>
+              {balanceLoading
+                ? <span style={{ opacity: 0.5, fontSize: '0.85rem' }}>Loading…</span>
+                : <AnimatedBalance value={savingsVault ?? 0} />}
+            </p>
           </div>
         </div>
       </section>
@@ -873,20 +924,6 @@ export default function Dashboard({ profile, onLogout }) {
           // Do NOT pass fromBalance or any balance info
         }}
       />
-
-      {/* Example: Send transaction to Supabase (call this after a successful transaction) */}
-      {/*
-      const sendTransactionToSupabase = async ({ userId, receiverName, amount, status }) => {
-        try {
-          await supabase
-            .from('transactions')
-            .select('*')
-            .eq('user_id', profile.id)
-        } catch (err) {
-          console.error('Supabase transaction insert failed:', err)
-        }
-      }
-      */}
 
       {/* ── Global Exchange Modal ────────────────────────── */}
       {showExchange && (() => {

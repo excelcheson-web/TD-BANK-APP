@@ -27,10 +27,6 @@ export default defineConfig({
           if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
             return 'vendor-react'
           }
-          // Supabase client — large but stable
-          if (id.includes('node_modules/@supabase/')) {
-            return 'vendor-supabase'
-          }
           // PDF generation libs — only loaded when user downloads a receipt
           if (id.includes('node_modules/jspdf') || id.includes('node_modules/html2canvas')) {
             return 'vendor-pdf'

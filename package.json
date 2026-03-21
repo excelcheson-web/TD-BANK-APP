@@ -11,12 +11,11 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
-    "@supabase/ssr": "^0.9.0",
-    "@supabase/supabase-js": "^2.99.2",
+    "firebase": "^12.11.0",
     "jspdf": "^4.2.0",
-    "next": "^16.1.7",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "react-google-recaptcha": "^3.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

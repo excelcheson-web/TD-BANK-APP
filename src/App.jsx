@@ -4,103 +4,69 @@ import LoginScreen from './components/LoginScreen'
 import OnboardingFlow from './components/OnboardingFlow'
 import Dashboard from './components/Dashboard'
 import SecurityLock from './components/SecurityLock'
-import { registerUser, getUserProfile, onAuthChange, logoutUser } from './services/supabaseAuth'
-import { supabase } from './services/supabaseClient'
+import { registerUser, getUserProfile, onAuthChange, logoutUser } from './services/firebaseAuth'
 
 export default function App() {
-  const [booting, setBooting] = useState(true)
-  const [user, setUser] = useState(null)
-  // authLoading stays true until Supabase resolves the session — prevents React #310 flash
+  const [booting, setBooting]         = useState(true)
+  const [user, setUser]               = useState(null)
+  // authLoading stays true until Firebase's onAuthStateChanged fires once.
+  // This prevents the React #310 "flash of unauthenticated content" on refresh.
   const [authLoading, setAuthLoading] = useState(true)
-  const [authTimedOut, setAuthTimedOut] = useState(false)
   const [registering, setRegistering] = useState(false)
 
-  // ── Optimized Auth Handshake ──────────────────────────────
-  // Step 1: supabase.auth.getSession() reads the persisted session from
-  //         localStorage synchronously (~0 ms) — this is what prevents
-  //         the React #310 "guessing" flash on every refresh.
-  // Step 2: onAuthStateChange listens for subsequent changes
-  //         (login, logout, token auto-refresh) so the UI stays in sync.
+  // ── Firebase auth state listener ─────────────────────────
+  // onAuthStateChanged fires immediately with the persisted session (or null).
+  // We wait for that first callback before rendering any screen.
   useEffect(() => {
-    let isMounted = true
-    let initialResolved = false
+    // Safety net: if onAuthStateChanged never fires (e.g. network issue),
+    // force authLoading to false after 8 s so the app never stays white.
+    const safetyTimer = setTimeout(() => setAuthLoading(false), 8000)
 
-    // Shared helper — resolves a Supabase user into a profile and updates state
-    const resolveAuth = async (supabaseUser) => {
-      if (!isMounted) return
-      if (supabaseUser) {
-        const profile = await getUserProfile(supabaseUser.id)
-        if (!isMounted) return
-        if (profile) {
-          setUser(profile)
-          localStorage.setItem('securebank_user', JSON.stringify(profile))
-          localStorage.setItem('user_account_type', profile.accountType || 'Savings Account')
-          localStorage.setItem('user_email', profile.email || '')
-          localStorage.setItem('user_name', profile.name || profile.full_name || '')
-          localStorage.setItem('bank_balance', String(profile.balance ?? 0))
-        } else {
-          // Auth user exists but no profile row — clear state
-          setUser(null)
-          clearLocalStorage()
-        }
-      } else {
-        setUser(null)
-      }
-      if (isMounted) setAuthLoading(false)
-    }
-
-    // ── Primary: immediate session check from localStorage ──
-    // getSession() reads the persisted token from localStorage (~0 ms,
-    // no network round-trip needed). This resolves authLoading well
-    // before the 5-second vault splash ends, eliminating the #310 flash.
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (!initialResolved) {
-        initialResolved = true
-        if (error) {
-          // Stale / invalid refresh token (HTTP 400 "Refresh Token Not Found").
-          // signOut() wipes the bad token from localStorage so the error
-          // never appears again on the next page load.
-          supabase.auth.signOut().catch(() => {})
-          clearLocalStorage()
-          if (isMounted) {
+    const unsub = onAuthChange(async (firebaseUser) => {
+      try {
+        if (firebaseUser) {
+          // User is signed in — fetch their Firestore profile
+          const profile = await getUserProfile(firebaseUser.uid)
+          if (profile) {
+            setUser(profile)
+            try {
+              // Avoid storing large base64 profilePic in localStorage
+              const lsProfile = { ...profile }
+              if (lsProfile.profilePic && lsProfile.profilePic.length > 5000) {
+                lsProfile.profilePic = ''
+                lsProfile.profile_pic = ''
+              }
+              localStorage.setItem('securebank_user',   JSON.stringify(lsProfile))
+              localStorage.setItem('user_account_type', profile.accountType || '')
+              localStorage.setItem('user_email',        profile.email       || '')
+              localStorage.setItem('user_name',         profile.full_name   || '')
+              localStorage.setItem('bank_balance',      String(profile.balance ?? 0))
+            } catch (storageErr) {
+              console.warn('[App] localStorage write failed (quota?):', storageErr.message)
+            }
+          } else {
+            // Auth token exists but no Firestore profile — sign out cleanly
+            try { await logoutUser() } catch { /* silent */ }
+            clearLocalStorage()
             setUser(null)
-            setAuthLoading(false)
           }
         } else {
-          resolveAuth(session?.user || null)
+          // No session
+          setUser(null)
         }
-      }
-    }).catch(() => {
-      if (!initialResolved && isMounted) {
-        initialResolved = true
+      } catch (err) {
+        console.warn('[App] auth callback error:', err)
         setUser(null)
+      } finally {
+        // Always resolve authLoading — prevents permanent white screen
+        clearTimeout(safetyTimer)
         setAuthLoading(false)
       }
     })
 
-    // ── Secondary: react to future auth changes ─────────────
-    // Fires on: login, logout, token refresh, tab focus with expired token
-    const unsubscribe = onAuthChange((supabaseUser) => {
-      if (!initialResolved) {
-        // Race: onAuthStateChange fired before getSession resolved
-        initialResolved = true
-        resolveAuth(supabaseUser)
-      } else {
-        // Subsequent change after initial load — keep UI in sync
-        resolveAuth(supabaseUser)
-      }
-    })
-
     return () => {
-      isMounted = false
-      unsubscribe()
-    }
-  }, [])
-
-  // Initialize bank_balance in localStorage if not set
-  useEffect(() => {
-    if (localStorage.getItem('bank_balance') === null) {
-      localStorage.setItem('bank_balance', '0')
+      clearTimeout(safetyTimer)
+      unsub()
     }
   }, [])
 
@@ -110,34 +76,8 @@ export default function App() {
     return () => clearTimeout(t)
   }, [])
 
-  const handleRetry = () => {
-    setAuthTimedOut(false)
-    setAuthLoading(true)
-    window.location.reload()
-  }
-
-  // Show loader while booting OR while Supabase is resolving the session
+  // Show loader while vault is booting OR while Firebase auth hasn't resolved yet
   if (booting || authLoading) {
-    if (authTimedOut) {
-      return (
-        <div className="vault-loader-screen">
-          <p className="vault-message" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Connection Timed Out</p>
-          <p className="vault-message" style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '1.5rem' }}>
-            Unable to reach the server. Please check your connection and try again.
-          </p>
-          <button
-            onClick={handleRetry}
-            style={{
-              padding: '12px 32px', borderRadius: '8px', border: 'none',
-              background: '#008a00', color: '#fff', fontSize: '1rem',
-              fontWeight: 600, cursor: 'pointer',
-            }}
-          >
-            Retry
-          </button>
-        </div>
-      )
-    }
     return <VaultLoader message="Welcome to TD Bank" />
   }
 
@@ -146,7 +86,9 @@ export default function App() {
       <OnboardingFlow
         onComplete={async (data) => {
           try {
-            const profile = await registerUser(data.email, data.password, {
+            const profile = await registerUser({
+              email: data.email,
+              password: data.password,
               name: data.fullName,
               accountNumber: data.accountNumber,
               accountType: data.accountType,
@@ -157,11 +99,20 @@ export default function App() {
             // balance etc.) before writing the new account's data so a fresh
             // account always starts with an empty transaction history.
             clearLocalStorage()
-            localStorage.setItem('securebank_user', JSON.stringify(profile))
-            localStorage.setItem('user_account_type', profile.accountType || data.accountType)
-            localStorage.setItem('user_email', profile.email || data.email)
-            localStorage.setItem('user_name', profile.name || data.fullName)
-            localStorage.setItem('bank_balance', '0')
+            try {
+              // Avoid storing large base64 profilePic in localStorage
+              const lsProfile = { ...profile }
+              if (lsProfile.profilePic && lsProfile.profilePic.length > 5000) {
+                lsProfile.profilePic = ''
+                lsProfile.profile_pic = ''
+              }
+              localStorage.setItem('securebank_user', JSON.stringify(lsProfile))
+              localStorage.setItem('user_account_type', profile.accountType || data.accountType)
+              localStorage.setItem('user_name', profile.name || data.fullName)
+              localStorage.setItem('bank_balance', '0')
+            } catch (storageErr) {
+              console.warn('[App] localStorage write failed (quota?):', storageErr.message)
+            }
             setUser(profile)
             setRegistering(false)
           } catch (err) {
@@ -177,11 +128,19 @@ export default function App() {
       <LoginScreen
         onLogin={(u) => {
           setUser(u)
-          localStorage.setItem('securebank_user', JSON.stringify(u))
-          localStorage.setItem('user_account_type', u.accountType || 'Savings Account')
-          localStorage.setItem('user_email', u.email || '')
-          localStorage.setItem('user_name', u.name || u.full_name || '')
-          localStorage.setItem('bank_balance', String(u.balance ?? 0))
+          try {
+            const lsUser = { ...u }
+            if (lsUser.profilePic && lsUser.profilePic.length > 5000) {
+              lsUser.profilePic = ''
+              lsUser.profile_pic = ''
+            }
+            localStorage.setItem('securebank_user', JSON.stringify(lsUser))
+            localStorage.setItem('user_account_type', u.accountType || 'Savings Account')
+            localStorage.setItem('user_name', u.name || u.full_name || '')
+            localStorage.setItem('bank_balance', String(u.balance ?? 0))
+          } catch (storageErr) {
+            console.warn('[App] localStorage write failed (quota?):', storageErr.message)
+          }
         }}
         onRegister={() => setRegistering(true)}
       />
@@ -205,14 +164,10 @@ export default function App() {
   )
 }
 
-// Clear ALL user-specific localStorage keys on logout / account switch.
-// Every key that stores per-user data must be listed here so a new user
-// never sees a previous user's balance, transactions, or notifications.
 function clearLocalStorage() {
   // Auth & profile
   localStorage.removeItem('securebank_user')
   localStorage.removeItem('user_account_type')
-  localStorage.removeItem('user_email')
   localStorage.removeItem('user_name')
   // Balance — must reset so new user starts at 0
   localStorage.removeItem('bank_balance')

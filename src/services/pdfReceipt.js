@@ -44,19 +44,19 @@ export function generateTransferPDF(txn) {
   const isIntl = txn.type === 'international'
 
   // ── Centered watermark logo (faint, behind content) ────
-  const logoW = 60
-  const logoH = 53  // maintain 68:60 aspect ratio
+  const logoW = 80
+  const logoH = 71  // maintain aspect ratio
   const logoX = (pageW - logoW) / 2
   const logoY = (pageH - logoH) / 2
-  doc.saveGraphicsState()
-  doc.setGState(new doc.GState({ opacity: 0.05 }))
-  // Use greenhills-logo.png if available, else fallback to TD_LOGO_B64
-  if (window && window.greenhillsLogoBase64) {
-    doc.addImage(window.greenhillsLogoBase64, 'PNG', logoX, logoY, logoW, logoH)
-  } else {
+  try {
+    // jsPDF v2+ GState opacity API
+    doc.setGState(new doc.GState({ opacity: 0.06 }))
     doc.addImage(TD_LOGO_B64, 'PNG', logoX, logoY, logoW, logoH)
+    // Reset to full opacity for all subsequent drawing
+    doc.setGState(new doc.GState({ opacity: 1 }))
+  } catch (_) {
+    // GState not supported in this build — skip watermark silently
   }
-  doc.restoreGraphicsState()
 
   // ── Green header bar ──────────────────────────────────
   doc.setFillColor(...TD_GREEN)
