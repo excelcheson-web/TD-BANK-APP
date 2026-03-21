@@ -67,7 +67,7 @@ export default function App() {
               }
               localStorage.setItem('securebank_user',   JSON.stringify(lsProfile))
               localStorage.setItem('user_account_type', profile.accountType || '')
-              localStorage.setItem('user_email',        profile.email       || '')
+              localStorage.setItem('user_email',        profile.email || firebaseUser.email || '')
               localStorage.setItem('user_name',         profile.full_name   || '')
               localStorage.setItem('bank_balance',      String(profile.balance ?? 0))
             } catch (storageErr) {

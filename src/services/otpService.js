@@ -37,9 +37,21 @@ export function sendOtp(firstArg, secondArg) {
   // Detect calling pattern: if firstArg looks like an email string, use async style
   const isAsyncStyle = typeof firstArg === 'string'
 
-  const recipientEmail = isAsyncStyle
+  let recipientEmail = isAsyncStyle
     ? firstArg
     : localStorage.getItem('user_email')
+
+  // Fallback: if user_email is not set, try to extract from the stored profile JSON
+  if (!recipientEmail) {
+    try {
+      const stored = JSON.parse(localStorage.getItem('securebank_user') || 'null')
+      if (stored && stored.email) {
+        recipientEmail = stored.email
+        // Persist for future calls so this fallback isn't needed again
+        localStorage.setItem('user_email', stored.email)
+      }
+    } catch { /* silent */ }
+  }
 
   const recipientName = localStorage.getItem('user_name') || ''
 
