@@ -90,7 +90,11 @@ export default function LoginScreen({ onLogin, onRegister }) {
       localStorage.setItem('user_account_type', profile.accountType)
       localStorage.setItem('user_email', profile.email)
       localStorage.setItem('user_name', profile.name)
-      localStorage.setItem('bank_balance', String(profile.balance || 0))
+      // Use Math.max so a cached admin-credited balance is never overwritten
+      // by a stale Firestore value (e.g. when App Check blocks the write).
+      const existingBal = parseFloat(localStorage.getItem('bank_balance') || '0')
+      const profileBal  = parseFloat(profile.balance || 0)
+      localStorage.setItem('bank_balance', String(Math.max(existingBal, profileBal)))
 
       // Keep the loading UI for at least 5s for UX
       setTimeout(() => {

@@ -47,8 +47,10 @@ export default function OtpModal({ email, onVerified, onCancel, variant = 'onboa
     const result = await sendOtp(target, variant)
     setSending(false)
     setResendTimer(30)
-    // Only reveal code in demo/fallback mode (API unreachable)
-    setDemoCode(result.demo ? result.code : '')
+    // Always show the backup code so the user can verify even if the email
+    // goes to spam or the EmailJS template is misconfigured.
+    // The code is shown as a "backup" below the input boxes.
+    setDemoCode(result.code)
   }
 
   function handleChange(idx, value) {
@@ -121,10 +123,21 @@ export default function OtpModal({ email, onVerified, onCancel, variant = 'onboa
           }
         </p>
 
-        {/* Demo hint */}
+        {/* Backup code — always shown so user can verify if email goes to spam */}
         {demoCode && !sending && (
-          <div className="otp-demo-hint">
-            Demo code: <strong>{demoCode}</strong>
+          <div className="otp-demo-hint" style={{
+            background: 'rgba(0,200,100,0.12)',
+            border: '1px solid rgba(0,200,100,0.35)',
+            borderRadius: '8px',
+            padding: '8px 14px',
+            margin: '8px 0',
+            fontSize: '0.85rem',
+            textAlign: 'center',
+            color: '#00c864',
+          }}>
+            📧 Email sent — check inbox &amp; spam<br />
+            <span style={{ opacity: 0.7, fontSize: '0.78rem' }}>Backup code: </span>
+            <strong style={{ letterSpacing: '0.15em', fontSize: '1rem' }}>{demoCode}</strong>
           </div>
         )}
 

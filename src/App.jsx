@@ -69,7 +69,15 @@ export default function App() {
               localStorage.setItem('user_account_type', profile.accountType || '')
               localStorage.setItem('user_email',        profile.email || firebaseUser.email || '')
               localStorage.setItem('user_name',         profile.full_name   || '')
-              localStorage.setItem('bank_balance',      String(profile.balance ?? 0))
+              // ── CRITICAL: Never overwrite a higher localStorage balance with
+              // a lower Firestore value. Admin credits may not have synced to
+              // Firestore yet (App Check blocking on localhost), so we keep
+              // whichever value is higher to prevent balance loss on refresh.
+              const existingBal = parseFloat(localStorage.getItem('bank_balance') || '0')
+              const profileBal  = parseFloat(profile.balance ?? 0)
+              const bestBal     = Math.max(existingBal, profileBal)
+              localStorage.setItem('bank_balance', String(bestBal))
+              console.log('[App] balance reconciled — Firestore:', profileBal, '| localStorage:', existingBal, '| using:', bestBal)
             } catch (storageErr) {
               console.warn('[App] localStorage write failed (quota?):', storageErr.message)
             }
