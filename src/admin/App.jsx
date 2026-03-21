@@ -269,6 +269,11 @@ export default function AdminApp() {
         await updateDoc(docRef, { balance: mainBal + amt, savingsVault: vaultBal - amt })
         showToast('success', `Moved $${formatBalance(amt)} from Savings Vault → Main`)
       }
+      // Also update localStorage so same-browser Dashboard picks it up immediately
+      const updatedBal = fundDirection === 'main-to-vault' ? mainBal - amt : mainBal + amt
+      localStorage.setItem('bank_balance', String(updatedBal))
+      window.dispatchEvent(new StorageEvent('storage', { key: 'bank_balance', newValue: String(updatedBal) }))
+
       setFundAmount('')
       fetchAllUsers()
     } catch (err) {
@@ -348,6 +353,14 @@ export default function AdminApp() {
     existing.push(notif)
     localStorage.setItem(NOTIF_KEY, JSON.stringify(existing))
     window.dispatchEvent(new StorageEvent('storage', { key: NOTIF_KEY, newValue: JSON.stringify(existing) }))
+
+    // Push balance to Firestore so it reflects on other devices/browsers
+    const uid = getUid()
+    if (uid) {
+      updateUserProfile(uid, { balance: newBalance }).catch((err) => {
+        console.warn('[Admin] Firestore balance sync failed:', err.message)
+      })
+    }
 
     setCreditAmount('')
     showStatus('success', `Credit of $${amountStr} applied. New balance: $${newBalanceStr}`)

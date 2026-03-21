@@ -125,7 +125,38 @@ export async function loginUser(email, password) {
     }
   } catch { /* silent */ }
 
-  throw new Error('Profile not found. Please contact support or complete registration.')
+  // Last resort: construct a basic profile from the Firebase Auth user object.
+  // This handles the case where Firestore is unavailable (App Check / timeout)
+  // AND localStorage has no cached profile (different browser, cleared storage).
+  console.warn('[loginUser] No Firestore or localStorage profile — constructing from auth user')
+  const fallbackProfile = normalizeProfile(user.uid, {
+    email:         user.email || email,
+    full_name:     user.displayName || email.split('@')[0] || 'User',
+    accountNumber: generateAccountNumber(),
+    accountType:   'Savings Account',
+    balance:       0,
+    savingsVault:  0,
+  })
+
+  // Cache it so subsequent logins / Face ID work
+  try {
+    localStorage.setItem('securebank_user', JSON.stringify(fallbackProfile))
+    console.log('[loginUser] Fallback profile cached in localStorage ✅')
+  } catch { /* silent */ }
+
+  // Also attempt to write to Firestore (fire-and-forget) so it's there next time
+  setDoc(doc(db, 'profiles', user.uid), {
+    full_name:    fallbackProfile.full_name,
+    email:        fallbackProfile.email,
+    accountNumber: fallbackProfile.accountNumber,
+    accountType:  fallbackProfile.accountType,
+    balance:      fallbackProfile.balance,
+    savingsVault: fallbackProfile.savingsVault,
+    createdAt:    new Date().toISOString(),
+  }).then(() => console.log('[loginUser] Fallback profile synced to Firestore ✅'))
+    .catch((err) => console.warn('[loginUser] Firestore write failed:', err.message))
+
+  return fallbackProfile
 }
 
 // ── Sign out ──────────────────────────────────────────────────────────────────

@@ -18,7 +18,7 @@ import CryptoPage from './CryptoPage'
 import TDLogo from './TDLogo'
 import { updateUserProfile, logoutUser } from '../services/firebaseAuth'
 import { db } from '../services/firebaseClient'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { useLanguage } from '../i18n/LanguageContext'
 import { LANGUAGES } from '../i18n/translations'
 
@@ -243,24 +243,58 @@ export default function Dashboard({ profile, onLogout }) {
     if (!uid) { setBalanceLoading(false); return }
     setBalanceLoading(true)
     setBalanceError(false)
+
+    // Read the locally-cached balance so we never lose deposits/transfers
+    const localBal = parseFloat(localStorage.getItem('bank_balance') || '0')
+
     try {
       const snap = await getDoc(doc(db, 'profiles', uid))
       if (snap.exists()) {
         const data = snap.data()
-        const fetched = parseFloat(data.balance ?? 0)
-        const vault   = parseFloat(data.savingsVault ?? data.savings_vault ?? 0)
-        setBankBalance(fetched)
+        const firestoreBal = parseFloat(data.balance ?? 0)
+        const vault = parseFloat(data.savingsVault ?? data.savings_vault ?? 0)
+
+        // Use the HIGHER of Firestore vs localStorage so we never
+        // overwrite a deposit/transfer that hasn't synced to Firestore yet.
+        const best = Math.max(firestoreBal, localBal)
+        setBankBalance(best)
         setSavingsVault(vault)
-        // Keep localStorage in sync so transfer components can read it
-        localStorage.setItem('bank_balance', String(fetched))
+        localStorage.setItem('bank_balance', String(best))
+
+        // If localStorage had a higher value, push it to Firestore (fire-and-forget)
+        if (localBal > firestoreBal) {
+          updateDoc(doc(db, 'profiles', uid), { balance: localBal }).catch(() => {})
+        }
+      } else {
+        // Profile doc doesn't exist in Firestore — use localStorage
+        setBankBalance(localBal)
+        localStorage.setItem('bank_balance', String(localBal))
       }
     } catch (err) {
       console.error('[Dashboard] fetchBalance failed:', err)
-      // Do NOT fall back to 0 — show an explicit error so the user
-      // knows it's a connection issue, not an empty account.
-      setBalanceError(true)
+      // Firestore unavailable — fall back to localStorage instead of showing error
+      if (localBal > 0) {
+        setBankBalance(localBal)
+      } else {
+        setBalanceError(true)
+      }
     } finally {
       setBalanceLoading(false)
+    }
+  }, [profile?.uid, profile?.id])
+
+  // ── Sync balance to Firestore whenever it changes ─────────
+  // Called by child components (deposit, transfer, etc.) via onBalanceUpdate.
+  // Writes to both React state + localStorage + Firestore (fire-and-forget).
+  const handleBalanceUpdate = useCallback((newBalance) => {
+    setBankBalance(newBalance)
+    localStorage.setItem('bank_balance', String(newBalance))
+    // Fire-and-forget Firestore sync
+    const uid = profile?.uid || profile?.id
+    if (uid) {
+      updateDoc(doc(db, 'profiles', uid), { balance: newBalance }).catch((err) => {
+        console.warn('[Dashboard] Firestore balance sync failed (will retry on next fetch):', err.message)
+      })
     }
   }, [profile?.uid, profile?.id])
 
@@ -511,7 +545,7 @@ export default function Dashboard({ profile, onLogout }) {
         <InternationalTransfer
           balance={bankBalance}
           onClose={() => { setShowIntlTransfer(false); setIntlPrefill('') }}
-          onBalanceUpdate={(nb) => setBankBalance(nb)}
+          onBalanceUpdate={handleBalanceUpdate}
           initialAmount={intlPrefill}
         />
       )}
@@ -519,7 +553,7 @@ export default function Dashboard({ profile, onLogout }) {
         <LocalTransfer
           balance={bankBalance}
           onClose={() => setShowLocalTransfer(false)}
-          onBalanceUpdate={(nb) => setBankBalance(nb)}
+          onBalanceUpdate={handleBalanceUpdate}
         />
       )}
       {showAccountInfo && (
@@ -533,7 +567,7 @@ export default function Dashboard({ profile, onLogout }) {
         <DepositOverlay
           balance={bankBalance}
           onClose={() => setShowDeposit(false)}
-          onBalanceUpdate={(nb) => setBankBalance(nb)}
+          onBalanceUpdate={handleBalanceUpdate}
         />
       )}
       {showBankCard && (
@@ -551,21 +585,21 @@ export default function Dashboard({ profile, onLogout }) {
         <ScheduledTransfer
           balance={bankBalance}
           onClose={() => setShowScheduled(false)}
-          onBalanceUpdate={(nb) => setBankBalance(nb)}
+          onBalanceUpdate={handleBalanceUpdate}
         />
       )}
       {showBillPay && (
         <BillPayment
           balance={bankBalance}
           onClose={() => setShowBillPay(false)}
-          onBalanceUpdate={(nb) => setBankBalance(nb)}
+          onBalanceUpdate={handleBalanceUpdate}
         />
       )}
       {showInvestment && (
         <Investment
           balance={bankBalance}
           onClose={() => setShowInvestment(false)}
-          onBalanceUpdate={(nb) => setBankBalance(nb)}
+          onBalanceUpdate={handleBalanceUpdate}
         />
       )}
       {showTxnHistory && (
@@ -574,7 +608,7 @@ export default function Dashboard({ profile, onLogout }) {
       {showFinServices && (
         <FinancialServices
           onClose={() => setShowFinServices(false)}
-          onBalanceUpdate={(nb) => setBankBalance(nb)}
+          onBalanceUpdate={handleBalanceUpdate}
         />
       )}
 
