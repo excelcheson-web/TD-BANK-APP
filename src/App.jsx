@@ -141,6 +141,7 @@ export default function App() {
               }
               localStorage.setItem('securebank_user', JSON.stringify(lsProfile))
               localStorage.setItem('user_account_type', profile.accountType || data.accountType)
+              localStorage.setItem('user_email', profile.email || data.email)
               localStorage.setItem('user_name', profile.name || data.fullName)
               localStorage.setItem('bank_balance', '0')
             } catch (storageErr) {
@@ -181,6 +182,7 @@ export default function App() {
             }
             localStorage.setItem('securebank_user', JSON.stringify(lsUser))
             localStorage.setItem('user_account_type', u.accountType || 'Savings Account')
+            localStorage.setItem('user_email', u.email || '')
             localStorage.setItem('user_name', u.name || u.full_name || '')
             localStorage.setItem('bank_balance', String(u.balance ?? 0))
           } catch (storageErr) {
@@ -213,6 +215,7 @@ function clearLocalStorage() {
   // Auth & profile
   localStorage.removeItem('securebank_user')
   localStorage.removeItem('user_account_type')
+  localStorage.removeItem('user_email')
   localStorage.removeItem('user_name')
   // Balance — must reset so new user starts at 0
   localStorage.removeItem('bank_balance')
