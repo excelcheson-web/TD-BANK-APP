@@ -66,6 +66,9 @@ export default function OnboardingFlow({ onComplete }) {
 
   /* ── Form state ─────────────────────────────────────────── */
   const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [dob, setDob] = useState('')
   const [idFile, setIdFile] = useState(null)
   const [profilePic, setProfilePic] = useState(null)
@@ -76,6 +79,7 @@ export default function OnboardingFlow({ onComplete }) {
 
   const [accountType, setAccountType] = useState('Savings Account')
   const [pinError, setPinError] = useState('')
+  const [emailError, setEmailError] = useState('')
 
   const pinRefs = useRef([])
   const confirmPinRefs = useRef([])
@@ -146,6 +150,8 @@ export default function OnboardingFlow({ onComplete }) {
     }
     onComplete({
       fullName,
+      email,
+      password,
       dob,
       idFile,
       profilePic,
@@ -156,11 +162,16 @@ export default function OnboardingFlow({ onComplete }) {
     })
   }
 
+  /* ── Email validation helper ────────────────────────────── */
+  const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
+
   /* ── Can proceed? ───────────────────────────────────────── */
   const canNext = (
-    step === 1 ? fullName.trim() && dob :
-    step === 2 ? true :
-    pin.join('').length === 6 && confirmPin.join('').length === 6
+    step === 1
+      ? fullName.trim() && dob && isValidEmail(email) && password.length >= 6 && password === confirmPassword
+      : step === 2
+        ? true
+        : pin.join('').length === 6 && confirmPin.join('').length === 6
   );
 
   /* ── Step content ───────────────────────────────────────── */
@@ -186,6 +197,55 @@ export default function OnboardingFlow({ onComplete }) {
             onChange={(e) => setFullName(e.target.value)}
             autoComplete="name"
           />
+        </div>
+
+        <div className="ob-field">
+          <label className="ob-label" htmlFor="ob-email">Email Address</label>
+          <input
+            id="ob-email"
+            className="ob-input"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setEmailError('') }}
+            onBlur={() => {
+              if (email && !isValidEmail(email)) setEmailError('Please enter a valid email')
+            }}
+            autoComplete="email"
+          />
+          {emailError && <p className="ob-pin-error">{emailError}</p>}
+        </div>
+
+        <div className="ob-field">
+          <label className="ob-label" htmlFor="ob-password">Password</label>
+          <input
+            id="ob-password"
+            className="ob-input"
+            type="password"
+            placeholder="Min 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+          />
+          {password && password.length < 6 && (
+            <p className="ob-pin-error">Password must be at least 6 characters</p>
+          )}
+        </div>
+
+        <div className="ob-field">
+          <label className="ob-label" htmlFor="ob-confirm-password">Confirm Password</label>
+          <input
+            id="ob-confirm-password"
+            className="ob-input"
+            type="password"
+            placeholder="Re-enter password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+          />
+          {confirmPassword && password !== confirmPassword && (
+            <p className="ob-pin-error">Passwords do not match</p>
+          )}
         </div>
 
         <div className="ob-field">

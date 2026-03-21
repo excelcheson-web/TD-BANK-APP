@@ -23,16 +23,19 @@ export const auth = getAuth(app)
 export const db   = getFirestore(app)
 
 // ── App Check (reCAPTCHA v3) ──────────────────────────────────────────────────
-// Skip entirely on localhost — reCAPTCHA domain is not registered for 127.0.0.1
-// or localhost, so initializing App Check there blocks ALL Firestore requests
-// and causes a permanent white screen / infinite VaultLoader.
+// On localhost enable the debug token so App Check doesn't block Auth / Firestore.
+// In production the real reCAPTCHA v3 provider is used.
 const isLocalhost =
   typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' ||
    window.location.hostname === '127.0.0.1')
 
-if (typeof window !== 'undefined' && !isLocalhost) {
+if (typeof window !== 'undefined') {
   try {
+    if (isLocalhost) {
+      // Debug token lets App Check pass on localhost without a real reCAPTCHA domain
+      self.FIREBASE_APPCHECK_DEBUG_TOKEN = true
+    }
     initializeAppCheck(app, {
       provider: new ReCaptchaV3Provider('6LekIpIsAAAAANyoVvklRU5sfyjht_NCUp-roZOu'),
       isTokenAutoRefreshEnabled: true,

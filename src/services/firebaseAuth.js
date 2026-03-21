@@ -1,5 +1,6 @@
 import {
-  signInAnonymously,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth'
@@ -18,6 +19,7 @@ function normalizeProfile(uid, raw) {
   return {
     uid,
     id:             uid,
+    email:          raw.email          || '',
     full_name:      raw.full_name      || raw.name          || 'User',
     name:           raw.full_name      || raw.name          || 'User',
     accountNumber:  raw.accountNumber  || raw.account_number || '',
@@ -33,13 +35,21 @@ function normalizeProfile(uid, raw) {
 }
 
 export async function registerUser(userData) {
+  const email         = userData.email
+  const password      = userData.password
   const fullName      = userData.name || userData.full_name || 'New User'
   const accountNumber = userData.accountNumber || userData.account_number || generateAccountNumber()
 
-  const { user } = await signInAnonymously(auth)
+  if (!email || !password) {
+    throw new Error('Email and password are required to register.')
+  }
+
+  // Create a real email/password user in Firebase Auth
+  const { user } = await createUserWithEmailAndPassword(auth, email, password)
 
   const profileData = {
     full_name:    fullName,
+    email,
     accountNumber,
     accountType:  userData.accountType  || 'Savings Account',
     pin:          userData.pin          || '',
@@ -53,8 +63,14 @@ export async function registerUser(userData) {
   return normalizeProfile(user.uid, profileData)
 }
 
-export async function loginUser() {
-  const { user } = await signInAnonymously(auth)
+export async function loginUser(email, password) {
+  if (!email || !password) {
+    throw new Error('Email and password are required to log in.')
+  }
+
+  // Sign in with email/password instead of anonymous
+  const { user } = await signInWithEmailAndPassword(auth, email, password)
+
   const snap = await getDoc(doc(db, 'profiles', user.uid))
   if (!snap.exists()) {
     throw new Error('Profile not found. Please contact support or complete registration.')

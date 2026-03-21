@@ -87,6 +87,8 @@ export default function App() {
         onComplete={async (data) => {
           try {
             const profile = await registerUser({
+              email: data.email,
+              password: data.password,
               name: data.fullName,
               accountNumber: data.accountNumber,
               accountType: data.accountType,
