@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react'
-import OtpModal from './OtpModal'
 
 /* ── Inline SVG icons ────────────────────────────────────── */
 const UserIcon = () => (
@@ -67,11 +66,7 @@ export default function OnboardingFlow({ onComplete }) {
 
   /* ── Form state ─────────────────────────────────────────── */
   const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [dob, setDob] = useState('')
-  const [emailVerified, setEmailVerified] = useState(false)
-  const [showOtp, setShowOtp] = useState(false)
   const [idFile, setIdFile] = useState(null)
   const [profilePic, setProfilePic] = useState(null)
   const profileRef = useRef(null)
@@ -98,11 +93,7 @@ export default function OnboardingFlow({ onComplete }) {
   }
 
   const next = () => {
-    // On step 1, require email verification before proceeding
-    if (step === 1 && !emailVerified) {
-      setShowOtp(true)
-      return
-    }
+    // No OTP required during signup — proceed directly
     if (step < 3) goTo(step + 1)
   }
 
@@ -155,8 +146,6 @@ export default function OnboardingFlow({ onComplete }) {
     }
     onComplete({
       fullName,
-      email,
-      password,
       dob,
       idFile,
       profilePic,
@@ -168,10 +157,11 @@ export default function OnboardingFlow({ onComplete }) {
   }
 
   /* ── Can proceed? ───────────────────────────────────────── */
-  const canNext =
-    step === 1 ? fullName.trim() && email.trim() && password.length >= 6 && dob :
+  const canNext = (
+    step === 1 ? fullName.trim() && dob :
     step === 2 ? true :
     pin.join('').length === 6 && confirmPin.join('').length === 6
+  );
 
   /* ── Step content ───────────────────────────────────────── */
   const renderStep = () => {
@@ -195,37 +185,6 @@ export default function OnboardingFlow({ onComplete }) {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             autoComplete="name"
-          />
-        </div>
-
-        <div className="ob-field">
-          <label className="ob-label" htmlFor="ob-email">Email Address</label>
-          <div className="ob-input-wrap">
-            <input
-              id="ob-email"
-              className="ob-input"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setEmailVerified(false) }}
-              autoComplete="email"
-            />
-            {emailVerified && (
-              <span className="ob-verified-badge">✓ Verified</span>
-            )}
-          </div>
-        </div>
-
-        <div className="ob-field">
-          <label className="ob-label" htmlFor="ob-password">Password</label>
-          <input
-            id="ob-password"
-            className="ob-input"
-            type="password"
-            placeholder="Min 6 characters"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
           />
         </div>
 
@@ -397,20 +356,6 @@ export default function OnboardingFlow({ onComplete }) {
 
   return (
     <div className="ob-screen">
-      {/* OTP verification modal */}
-      {showOtp && (
-        <OtpModal
-          email={email}
-          variant="onboarding"
-          onVerified={() => {
-            setShowOtp(false)
-            setEmailVerified(true)
-            goTo(2)
-          }}
-          onCancel={() => setShowOtp(false)}
-        />
-      )}
-
       {/* Background blobs */}
       <div className="ob-blob ob-blob--1" />
       <div className="ob-blob ob-blob--2" />
