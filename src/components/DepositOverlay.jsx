@@ -1,6 +1,5 @@
 import { useState } from 'react'
-
-const HISTORY_KEY = 'transfer_history'
+import { saveTransaction } from '../services/transactionService'
 
 function genRef() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -65,9 +64,7 @@ export default function DepositOverlay({ balance, onClose, onBalanceUpdate }) {
         date: new Date().toISOString(),
       }
 
-      const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
-      history.unshift(txn)
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+      saveTransaction(txn)
 
       localStorage.setItem('bank_balance', String(newBalance))
       window.dispatchEvent(new StorageEvent('storage', {

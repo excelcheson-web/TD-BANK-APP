@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { generateTransferPDF } from '../services/pdfReceipt'
-
-const HISTORY_KEY = 'transfer_history'
+import { loadTransactions } from '../services/transactionService'
 
 function fmt(n) {
   return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -42,8 +41,18 @@ export default function TransactionHistory({ onClose }) {
   const [stmtSending, setStmtSending] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
 
-  const allTxns = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]') } catch { return [] }
+  const [allTxns, setAllTxns] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('transfer_history') || '[]') } catch { return [] }
+  })
+
+  // Load from Firestore on mount and merge with localStorage
+  useEffect(() => {
+    const uid = (() => {
+      try { return JSON.parse(localStorage.getItem('securebank_user') || '{}').uid || null } catch { return null }
+    })()
+    loadTransactions(uid).then((txns) => {
+      if (txns.length > 0) setAllTxns(txns)
+    }).catch(() => { /* keep localStorage data */ })
   }, [])
 
   const filtered = useMemo(() => {

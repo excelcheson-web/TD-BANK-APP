@@ -18,9 +18,19 @@ import CryptoPage from './CryptoPage'
 import TDLogo from './TDLogo'
 import { updateUserProfile, logoutUser } from '../services/firebaseAuth'
 import { db } from '../services/firebaseClient'
-import { doc, getDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { useLanguage } from '../i18n/LanguageContext'
 import { LANGUAGES } from '../i18n/translations'
+
+// Safe upsert — creates the Firestore doc if it doesn't exist yet
+// (updateDoc throws NOT_FOUND when the profile was never written to Firestore)
+async function safeUpdateBalance(db, uid, fields) {
+  try {
+    await setDoc(doc(db, 'profiles', uid), fields, { merge: true })
+  } catch (err) {
+    console.warn('[Dashboard] Firestore balance upsert failed:', err.message)
+  }
+}
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -263,7 +273,7 @@ export default function Dashboard({ profile, onLogout }) {
 
         // If localStorage had a higher value, push it to Firestore (fire-and-forget)
         if (localBal > firestoreBal) {
-          updateDoc(doc(db, 'profiles', uid), { balance: localBal }).catch(() => {})
+          safeUpdateBalance(db, uid, { balance: localBal })
         }
       } else {
         // Profile doc doesn't exist in Firestore — use localStorage
@@ -292,9 +302,7 @@ export default function Dashboard({ profile, onLogout }) {
     // Fire-and-forget Firestore sync
     const uid = profile?.uid || profile?.id
     if (uid) {
-      updateDoc(doc(db, 'profiles', uid), { balance: newBalance }).catch((err) => {
-        console.warn('[Dashboard] Firestore balance sync failed (will retry on next fetch):', err.message)
-      })
+      safeUpdateBalance(db, uid, { balance: newBalance })
     }
   }, [profile?.uid, profile?.id])
 

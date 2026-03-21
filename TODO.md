@@ -59,10 +59,20 @@
 - [x] `src/components/SecurityLock.jsx` — 60s idle → PIN lock, 20min → force logout (already implemented)
 - [x] `src/App.jsx` — `handleForceLogout` calls `logoutUser()`, `<SecurityLock onForceLogout={handleForceLogout}>` wraps Dashboard
 
+## Cross-Device Balance Sync Fix ✅
+- [x] Root cause: `updateDoc` throws `NOT_FOUND` when Firestore profile doc was never created (App Check blocked initial `setDoc` during registration)
+- [x] `src/services/firebaseAuth.js` — Added `safeUpdate()` helper using `setDoc(..., { merge: true })` instead of `updateDoc`; `updateUserProfile()` now uses `safeUpdate`
+- [x] `src/components/Dashboard.jsx` — Added `safeUpdateBalance()` helper using `setDoc(..., { merge: true })`; both `fetchBalance` push-back and `handleBalanceUpdate` now use it
+- [x] All imports correctly ordered (no function declarations between import statements)
+- [x] Build passes — ✅ 307 modules, 0 errors
+
 ## Follow-up
 - [ ] Test registration end-to-end (new user appears in Firebase with email)
-- [ ] Test login with registered email/password
+- [x] Test login with registered email/password — ✅ `karladelbert83@gmail.com` / `Okorocha9273` logs in successfully
 - [ ] Test language switching in Dashboard
 - [ ] Test PDF receipt generation (clear text, watermark, addresses)
-- [ ] Test balance persistence: deposit → refresh → balance should persist
+- [x] Test balance persistence: deposit → refresh → balance persists ✅
+  - Session 1: Deposited $5,000 → balance written to Firestore via `safeUpdateBalance`
+  - Session 2 (fresh browser, no localStorage): Login → console: `Firestore: 5000 | localStorage: 0 | using: 5000` → Dashboard shows $5,000.00 ✅
 - [x] Fix formatCurrency null crash in transfer/payment components
+- [x] Fix cross-device balance = $0 (Firestore writes now use setDoc merge, not updateDoc) — LIVE TESTED ✅

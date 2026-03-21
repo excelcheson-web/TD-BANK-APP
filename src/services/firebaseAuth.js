@@ -7,6 +7,19 @@ import {
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
 import { auth, db } from './firebaseClient'
 
+// ── Safe upsert: creates the doc if missing, merges if it exists ──────────────
+// updateDoc throws NOT_FOUND when the profile doc was never written to Firestore
+// (e.g. App Check blocked the initial setDoc during registration).
+// setDoc with { merge: true } is safe in both cases.
+async function safeUpdate(docRef, fields) {
+  try {
+    await setDoc(docRef, fields, { merge: true })
+  } catch (err) {
+    console.warn('[firebaseAuth] safeUpdate failed:', err.message)
+    throw err
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function generateAccountNumber() {
@@ -110,7 +123,24 @@ export async function loginUser(email, password) {
   }
 
   if (snap && snap.exists()) {
-    return normalizeProfile(user.uid, snap.data())
+    const data = snap.data()
+    // If the Firestore doc was created by safeUpdateBalance (only has { balance }),
+    // it will be missing full_name / email / accountNumber. Supplement from auth user.
+    if (!data.full_name && !data.name) {
+      const storedName = (() => { try { return localStorage.getItem('user_name') || '' } catch { return '' } })()
+      data.full_name = user.displayName || storedName || (user.email ? user.email.split('@')[0] : '') || 'Account Holder'
+      data.email = data.email || user.email || email
+      data.accountNumber = data.accountNumber || generateAccountNumber()
+      data.accountType = data.accountType || 'Savings Account'
+      // Persist the supplemented fields back to Firestore (fire-and-forget)
+      setDoc(doc(db, 'profiles', user.uid), {
+        full_name:     data.full_name,
+        email:         data.email,
+        accountNumber: data.accountNumber,
+        accountType:   data.accountType,
+      }, { merge: true }).catch(() => {})
+    }
+    return normalizeProfile(user.uid, data)
   }
 
   // Fallback: try localStorage profile (written during registration)
@@ -183,7 +213,7 @@ export async function getUserProfile(uid) {
 // ── Update profile fields ─────────────────────────────────────────────────────
 
 export async function updateUserProfile(uid, fields) {
-  await updateDoc(doc(db, 'profiles', uid), fields)
+  await safeUpdate(doc(db, 'profiles', uid), fields)
 }
 
 // ── Auth state listener ───────────────────────────────────────────────────────

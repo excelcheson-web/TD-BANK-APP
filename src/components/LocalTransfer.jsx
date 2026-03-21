@@ -2,8 +2,7 @@ import { useState, useRef } from 'react'
 import { generateTransferPDF } from '../services/pdfReceipt'
 import { sendTransferEmail } from '../services/emailNotification'
 import { sendOtp, verifyOtp } from '../services/otpService'
-
-const HISTORY_KEY = 'transfer_history'
+import { saveTransaction } from '../services/transactionService'
 
 function genRef() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -163,10 +162,8 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
 
     setTimeout(() => {
       const txn = pendingTxn
-      // Save to history
-      const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
-      history.unshift(txn)
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+      // Save to history (localStorage + Firestore)
+      saveTransaction(txn)
 
       // Update balance
       localStorage.setItem('bank_balance', String(txn.balanceAfter))
