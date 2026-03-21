@@ -42,7 +42,7 @@
 - [x] `src/components/Investment.jsx` — same fix (`fmt` function)
 - Root cause: `bankBalance` initialized as `useState(null)` in Dashboard, passed to child components where `formatCurrency(null)` crashed
 
-## Balance Persistence Fix ✅
+## ✅ Balance Persistence Fix (COMPLETED)
 - [x] `src/components/Dashboard.jsx` — `fetchBalance` rewritten: reads localStorage first, on Firestore success uses `Math.max(firestoreBal, localBal)` to prevent losing unsynced deposits; if localStorage higher, pushes to Firestore (fire-and-forget); on Firestore failure falls back to localStorage
 - [x] `src/components/Dashboard.jsx` — `handleBalanceUpdate` created: wraps `setBankBalance` + `localStorage.setItem` + `updateDoc` (fire-and-forget Firestore sync)
 - [x] All 7 child components (`InternationalTransfer`, `LocalTransfer`, `DepositOverlay`, `ScheduledTransfer`, `BillPayment`, `Investment`, `FinancialServices`) now use `handleBalanceUpdate` instead of raw `setBankBalance`
