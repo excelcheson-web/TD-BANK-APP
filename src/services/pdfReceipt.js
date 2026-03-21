@@ -1,9 +1,9 @@
 import { jsPDF } from 'jspdf'
 
 const TD_GREEN = [0, 138, 0]       // #008a00
-const DARK = [0, 0, 0]             // #000000 — solid black for all body text
-const GRAY = [50, 50, 50]          // near-black for labels
-const LIGHT_GRAY = [229, 231, 235]  // gray-200 for dividers
+const DARK = [33, 33, 33]          // near-black for body text
+const GRAY = [100, 100, 100]       // medium gray for labels
+const LIGHT_GRAY = [220, 220, 220] // dividers
 const WHITE = [255, 255, 255]
 
 // TD logo as base64 PNG for PDF watermark
@@ -43,50 +43,44 @@ export function generateTransferPDF(txn) {
   const contentW = pageW - margin * 2
   const isIntl = txn.type === 'international'
 
-  // ── Centered watermark logo (faint, behind content) ────
-  const logoW = 80
-  const logoH = 71  // maintain aspect ratio
-  const logoX = (pageW - logoW) / 2
-  const logoY = (pageH - logoH) / 2
-  try {
-    // jsPDF v2+ GState opacity API
-    doc.setGState(new doc.GState({ opacity: 0.06 }))
-    doc.addImage(TD_LOGO_B64, 'PNG', logoX, logoY, logoW, logoH)
-    // Reset to full opacity for all subsequent drawing
-    doc.setGState(new doc.GState({ opacity: 1 }))
-  } catch (_) {
-    // GState not supported in this build — skip watermark silently
-  }
+  // ══════════════════════════════════════════════════════════
+  // DRAW ALL CONTENT FIRST (at full opacity)
+  // Then draw watermark LAST so GState opacity bug doesn't
+  // affect readable content.
+  // ══════════════════════════════════════════════════════════
 
   // ── Green header bar ──────────────────────────────────
   doc.setFillColor(...TD_GREEN)
-  doc.rect(0, 0, pageW, 38, 'F')
+  doc.rect(0, 0, pageW, 40, 'F')
 
-  // Bank name (since we can't embed the raster logo cleanly, use bold text)
+  // Bank name — bold, top-left
   doc.setTextColor(...WHITE)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(22)
-  doc.text('TD', margin, 18)
-  doc.setFontSize(10)
-  doc.text('Bank', margin + 14, 18)
+  doc.setFontSize(24)
+  doc.text('TD Bank', margin, 16)
 
-  // Title
+  // Sub-line under bank name
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.text('TD Bank, N.A.  |  SWIFT: TDOMUS33  |  Member FDIC', margin, 23)
+
+  // Title — right-aligned
   const title = isIntl ? 'International Wire Confirmation' : 'Local Transfer Confirmation'
   doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
   doc.text(title, pageW - margin, 16, { align: 'right' })
 
-  // Sub-line
+  // Date line — right-aligned
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text('TD Bank, N.A.  |  SWIFT: TDOMUS33  |  Member FDIC', pageW - margin, 23, { align: 'right' })
+  doc.text(formatDate(txn.date), pageW - margin, 24, { align: 'right' })
 
-  // Date line under header
-  doc.setFontSize(8)
-  doc.text(formatDate(txn.date), pageW - margin, 30, { align: 'right' })
+  // Thin accent line at bottom of header
+  doc.setFillColor(0, 100, 0)
+  doc.rect(0, 40, pageW, 1.5, 'F')
 
   // ── Reference chip ────────────────────────────────────
-  let y = 50
+  let y = 54
 
   doc.setFillColor(245, 247, 250)
   doc.roundedRect(margin, y - 6, contentW, 16, 3, 3, 'F')
@@ -112,54 +106,58 @@ export function generateTransferPDF(txn) {
   y += 16
 
   // Table rows helper
-  const drawRow = (label, value, opts = {}) => {
-    // Alternating bg
-    if (opts.bg) {
-      doc.setFillColor(250, 251, 252)
+  let rowIndex = 0
+  const drawRow = (label, value) => {
+    // Alternating background
+    if (rowIndex % 2 === 0) {
+      doc.setFillColor(248, 250, 252)
       doc.rect(margin, y - 4.5, contentW, 11, 'F')
     }
-    // Separator
+    // Separator line
     doc.setDrawColor(...LIGHT_GRAY)
     doc.setLineWidth(0.2)
     doc.line(margin, y + 6.5, pageW - margin, y + 6.5)
 
+    // Label
     doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(...GRAY)
     doc.text(label, margin + 4, y + 2)
 
+    // Value
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...DARK)
     doc.text(String(value), pageW - margin - 4, y + 2, { align: 'right' })
+
     y += 11
+    rowIndex++
   }
 
-  drawRow('Beneficiary Name', txn.beneficiary, { bg: true })
+  drawRow('Beneficiary Name', txn.beneficiary)
 
-  // Transaction Category
   const category = txn.category || (isIntl ? 'International Wire Transfer' : 'Local Transfer')
   drawRow('Transaction Category', category)
 
   if (isIntl) {
-    drawRow('IBAN / Account No.', txn.iban || '—', { bg: true })
+    drawRow('IBAN / Account No.', txn.iban || '—')
     drawRow('SWIFT / BIC Code', txn.swift || '—')
-    drawRow('Bank Name', txn.bankName || '—', { bg: true })
+    drawRow('Bank Name', txn.bankName || '—')
     drawRow('Country', txn.country || '—')
   } else {
-    drawRow('Account Number', txn.accountNumber || '—', { bg: true })
+    drawRow('Account Number', txn.accountNumber || '—')
     drawRow('Bank Name', txn.bankName || '—')
   }
 
-  drawRow('Transfer Amount', `$${formatCurrency(txn.amount)}`, { bg: true })
+  drawRow('Transfer Amount', `$${formatCurrency(txn.amount)}`)
 
   // ── Status badge ──────────────────────────────────────
-  y += 6
+  y += 8
   doc.setFillColor(236, 253, 245)
-  doc.roundedRect(margin, y - 4, 52, 12, 3, 3, 'F')
+  doc.roundedRect(margin, y - 4, 56, 12, 3, 3, 'F')
   doc.setFontSize(9)
   doc.setTextColor(22, 163, 74)
   doc.setFont('helvetica', 'bold')
-  doc.text('● Status: Completed', margin + 5, y + 3)
+  doc.text('\u2713  Status: Completed', margin + 5, y + 3)
 
   // Timestamp
   doc.setFontSize(7.5)
@@ -177,7 +175,7 @@ export function generateTransferPDF(txn) {
   if (isIntl) {
     y += 10
     doc.setFillColor(255, 251, 235)
-    doc.roundedRect(margin, y - 4, contentW, 20, 3, 3, 'F')
+    doc.roundedRect(margin, y - 4, contentW, 22, 3, 3, 'F')
     doc.setFontSize(8)
     doc.setTextColor(161, 98, 7)
     doc.setFont('helvetica', 'bold')
@@ -192,9 +190,9 @@ export function generateTransferPDF(txn) {
   }
 
   // ── Footer ────────────────────────────────────────────
-  const footerY = pageH - 28
+  const footerY = pageH - 42
 
-  // Green line
+  // Green accent line
   doc.setDrawColor(...TD_GREEN)
   doc.setLineWidth(0.6)
   doc.line(margin, footerY, pageW - margin, footerY)
@@ -214,10 +212,39 @@ export function generateTransferPDF(txn) {
     { align: 'center' }
   )
   doc.text(
-    `© ${new Date().getFullYear()} TD Bank. All rights reserved.  |  For questions call 1-888-751-9000`,
+    `\u00A9 ${new Date().getFullYear()} TD Bank. All rights reserved.  |  For questions call 1-888-751-9000`,
     pageW / 2, footerY + 16,
     { align: 'center' }
   )
+
+  // ── Bank Addresses ────────────────────────────────────
+  doc.setFontSize(6.5)
+  doc.setTextColor(130, 130, 130)
+  doc.setFont('helvetica', 'bold')
+  doc.text('U.S. Corporate Office:', margin, footerY + 24)
+  doc.setFont('helvetica', 'normal')
+  doc.text('4140 Church Road, Mount Laurel, N.J., 08054', margin + 32, footerY + 24)
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('Canadian Corporate Office:', margin, footerY + 29)
+  doc.setFont('helvetica', 'normal')
+  doc.text('P.O. Box 1, Toronto-Dominion Centre, Toronto, Ontario M5K 1A2', margin + 38, footerY + 29)
+
+  // ══════════════════════════════════════════════════════════
+  // WATERMARK — drawn LAST so GState opacity issue doesn't
+  // affect any readable content above.
+  // ══════════════════════════════════════════════════════════
+  const logoW = 80
+  const logoH = 71  // maintain aspect ratio
+  const logoX = (pageW - logoW) / 2
+  const logoY = (pageH - logoH) / 2 - 10
+  try {
+    doc.setGState(new doc.GState({ opacity: 0.07 }))
+    doc.addImage(TD_LOGO_B64, 'PNG', logoX, logoY, logoW, logoH)
+    // No need to reset — watermark is the last thing drawn
+  } catch (_) {
+    // GState not supported in this build — skip watermark silently
+  }
 
   // ── Save ──────────────────────────────────────────────
   const filename = `TD_Bank_${isIntl ? 'Wire' : 'Transfer'}_${txn.ref}.pdf`

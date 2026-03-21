@@ -1,20 +1,39 @@
-# Fix Firebase Email/Password Authentication
+# TODO — Firebase Auth Fix + i18n Integration
 
-## Completed ✅
-- [x] **`src/services/firebaseClient.js`** — App Check with debug token for localhost, real reCAPTCHA v3 for production
-- [x] **`src/services/firebaseAuth.js`** — `registerUser()` uses `createUserWithEmailAndPassword`; `loginUser()` uses `signInWithEmailAndPassword`; localStorage fallback for both
-- [x] **`src/components/OnboardingFlow.jsx`** — Added email & password fields; removed KYC step (2-step flow: Identity → Security)
-- [x] **`src/App.jsx`** — Passes email & password to `registerUser()`; `isRegisteringRef` guard; localStorage fallback in `onAuthStateChanged`
+## Firebase Email/Password Auth ✅
+- [x] `src/services/firebaseAuth.js` — Use `createUserWithEmailAndPassword` / `signInWithEmailAndPassword`
+- [x] `src/services/firebaseClient.js` — Debug token for localhost App Check
+- [x] `src/components/OnboardingFlow.jsx` — Collect email + password + confirmPassword
+- [x] `src/App.jsx` — Pass email/password to `registerUser()`
 
-## Netlify Deployment Checklist
-- [ ] Set `VITE_FIREBASE_API_KEY` environment variable in Netlify (Site settings → Environment variables)
-- [ ] Ensure reCAPTCHA v3 site key `6LekIpIsAAAAANyoVvklRU5sfyjht_NCUp-roZOu` is registered for your Netlify domain at https://www.google.com/recaptcha/admin
-- [ ] Ensure Firebase Auth → Sign-in method → Email/Password is **enabled**
-- [ ] Ensure Firestore security rules allow authenticated users to read/write their own profile
-- [ ] App Check enforcement: ensure your Netlify domain is listed in Firebase Console → App Check → reCAPTCHA v3 → allowed domains
+## i18n Language Files ✅
+- [x] `src/i18n/en.js` — English
+- [x] `src/i18n/fr.js` — French
+- [x] `src/i18n/es.js` — Spanish
+- [x] `src/i18n/zh.js` — Chinese
+- [x] `src/i18n/ar.js` — Arabic
+- [x] `src/i18n/hi.js` — Hindi
+- [x] `src/i18n/pt.js` — Portuguese
+- [x] `src/i18n/de.js` — German
+- [x] `src/i18n/translations.js` — Index combining all languages
+- [x] `src/i18n/LanguageContext.jsx` — React Context + useLanguage hook
+- [x] `src/main.jsx` — Wrap App with LanguageProvider
 
-## How It Works
-- **Localhost**: App Check uses debug token (fire-and-forget Firestore writes, localStorage fallback)
-- **Production (Netlify)**: App Check uses real reCAPTCHA v3 → Firestore writes are awaited and fully persistent
-- **Registration**: Creates Firebase Auth user with email/password → writes profile to Firestore → navigates to Dashboard
-- **Login**: Signs in with email/password → reads profile from Firestore (falls back to localStorage if unavailable)
+## i18n Component Integration ✅
+- [x] `src/components/Dashboard.jsx` — Added useLanguage, language selector in logo menu, ~30+ strings translated with t()
+- [x] `src/style.css` — Added `.db-lang-picker`, `.db-lang-option`, `.db-lang-flag`, `.db-lang-label` styles (dark + light mode)
+- [x] Verify build passes — ✅ `npm run build` succeeds
+- [ ] `src/components/LoginScreen.jsx` — Translate strings (optional)
+- [ ] `src/components/OnboardingFlow.jsx` — Translate strings (optional)
+
+## PDF Receipt Fix ✅
+- [x] `src/services/pdfReceipt.js` — All content drawn at full opacity FIRST, watermark drawn LAST at 0.07 opacity
+- [x] Bold "TD Bank" header (24pt) at top-left
+- [x] US + Canadian bank addresses in footer
+- [x] Centered watermark logo
+
+## Follow-up
+- [ ] Test registration end-to-end (new user appears in Firebase with email)
+- [ ] Test login with registered email/password
+- [ ] Test language switching in Dashboard
+- [ ] Test PDF receipt generation (clear text, watermark, addresses)
