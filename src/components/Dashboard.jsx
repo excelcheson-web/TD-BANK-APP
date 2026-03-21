@@ -19,6 +19,8 @@ import TDLogo from './TDLogo'
 import { updateUserProfile, logoutUser } from '../services/firebaseAuth'
 import { db } from '../services/firebaseClient'
 import { doc, getDoc } from 'firebase/firestore'
+import { useLanguage } from '../i18n/LanguageContext'
+import { LANGUAGES } from '../i18n/translations'
 
 const STORAGE_KEY = 'securebank_admin'
 const NOTIF_KEY = 'securebank_notifications'
@@ -189,6 +191,8 @@ const CameraIcon = () => (
 )
 
 export default function Dashboard({ profile, onLogout }) {
+  const { t, lang, changeLang } = useLanguage()
+  const [showLangPicker, setShowLangPicker] = useState(false)
   const [showReceipt, setShowReceipt] = useState(false)
   const [showTransferOtp, setShowTransferOtp] = useState(false)
   const [admin, setAdmin] = useState(getAdminData)
@@ -486,11 +490,11 @@ export default function Dashboard({ profile, onLogout }) {
         <div className="suspend-overlay" onClick={() => setShowSuspend(false)}>
           <div className="suspend-popup" onClick={(e) => e.stopPropagation()}>
             <div className="suspend-icon">🚫</div>
-            <h2 className="suspend-title">Transfers Suspended</h2>
+            <h2 className="suspend-title">{t('transfersSuspended')}</h2>
             <p className="suspend-msg">
-              {admin.suspendReason || 'Your account has been temporarily suspended. Please contact support for assistance.'}
+              {admin.suspendReason || t('accountSuspendedMsg')}
             </p>
-            <button className="suspend-close-btn" onClick={() => setShowSuspend(false)}>Understood</button>
+            <button className="suspend-close-btn" onClick={() => setShowSuspend(false)}>{t('understood')}</button>
           </div>
         </div>
       )}
@@ -585,15 +589,15 @@ export default function Dashboard({ profile, onLogout }) {
             <div className="db-logo-menu">
               <button className="db-logo-menu-item" onClick={() => { setShowLogoMenu(false); openWithLoading(() => setShowAccountInfo(true)) }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Profile Settings
+                {t('profileSettings')}
               </button>
               <button className="db-logo-menu-item" onClick={() => { setShowLogoMenu(false); setBalanceHidden((h) => { const next = !h; localStorage.setItem('privacy_state', next ? 'hidden' : 'visible'); return next }) }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Privacy
+                {t('privacy')}
               </button>
               <button className="db-logo-menu-item" onClick={() => { setShowLogoMenu(false); openWithLoading(() => setShowBankCard(true)) }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Security
+                {t('securityMenu')}
               </button>
               <button className="db-logo-menu-item" onClick={() => { setShowLogoMenu(false); toggleTheme() }}>
                 {theme === 'dark' ? (
@@ -601,12 +605,31 @@ export default function Dashboard({ profile, onLogout }) {
                 ) : (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 )}
-                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                {theme === 'dark' ? t('lightMode') : t('darkMode')}
               </button>
+              {/* ── Language Selector ─────────────────────── */}
+              <button className="db-logo-menu-item" onClick={(e) => { e.stopPropagation(); setShowLangPicker((p) => !p) }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                {t('language')} — {LANGUAGES.find((l) => l.code === lang)?.label || 'English'}
+              </button>
+              {showLangPicker && (
+                <div className="db-lang-picker">
+                  {LANGUAGES.map((l) => (
+                    <button
+                      key={l.code}
+                      className={`db-lang-option ${lang === l.code ? 'db-lang-option--active' : ''}`}
+                      onClick={() => { changeLang(l.code); setShowLangPicker(false); setShowLogoMenu(false) }}
+                    >
+                      <span className="db-lang-flag">{l.flag}</span>
+                      <span className="db-lang-label">{l.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="db-logo-menu-divider" />
               <button className="db-logo-menu-item db-logo-menu-item--logout" onClick={async () => { setShowLogoMenu(false); try { await logoutUser() } catch {} localStorage.removeItem('securebank_user'); localStorage.removeItem('user_account_type'); localStorage.removeItem('privacy_state'); onLogout() }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Logout
+                {t('logout')}
               </button>
             </div>
           )}
@@ -636,7 +659,7 @@ export default function Dashboard({ profile, onLogout }) {
           <div className="db-notif-icon">{notification.type === 'credit' ? '↓' : '↑'}</div>
           <div className="db-notif-body">
             <span className="db-notif-title">
-              {notification.type === 'credit' ? 'Credit Alert' : 'Debit Alert'}
+              {notification.type === 'credit' ? t('creditAlert') : t('debitAlert')}
             </span>
             <span className="db-notif-msg">
               {notification.type === 'credit' ? '+' : '-'}${notification.amount} &bull; Balance: ${notification.newBalance}
@@ -650,7 +673,7 @@ export default function Dashboard({ profile, onLogout }) {
       {showGreeting && (
         <div className="db-greeting-banner">
           <span className="db-greeting-text">
-            Good {getTimeOfDay()}, {(profile?.name || profile?.full_name)?.split(' ')[0] || 'there'}! Welcome to TD Bank
+            {t(`good${getTimeOfDay().charAt(0).toUpperCase() + getTimeOfDay().slice(1)}`)}, {(profile?.name || profile?.full_name)?.split(' ')[0] || 'there'}! {t('welcomeToTD')}
           </span>
         </div>
       )}
@@ -659,7 +682,7 @@ export default function Dashboard({ profile, onLogout }) {
       <section className="db-balance-section">
         <div className="db-balance-card">
           <div className="db-balance-label-row">
-            <span className="db-balance-label">AVAILABLE BALANCE</span>
+            <span className="db-balance-label">{t('availableBalance')}</span>
             <button className="db-privacy-btn" onClick={togglePrivacy} aria-label={balanceHidden ? 'Show balance' : 'Hide balance'}>
               {balanceHidden ? (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -685,7 +708,7 @@ export default function Dashboard({ profile, onLogout }) {
                   color: '#ff6b6b', fontSize: '0.95rem', fontWeight: 600,
                   letterSpacing: '0.01em',
                 }}>
-                  Unable to load balance
+                  {t('unableToLoadBalance')}
                 </span>
               ) : (
                 <span style={{ color: '#000000' }}>
@@ -698,13 +721,13 @@ export default function Dashboard({ profile, onLogout }) {
           {/* Quick action icons */}
           <div className="db-quick-row">
             {[
-              { icon: <InfoIcon />, label: 'Info', action: () => openWithLoading(() => setShowAccountInfo(true)) },
-              { icon: <TransferIcon />, label: 'Transfer', action: () => openWithLoading(() => {
+              { icon: <InfoIcon />, label: t('info'), action: () => openWithLoading(() => setShowAccountInfo(true)) },
+              { icon: <TransferIcon />, label: t('transfer'), action: () => openWithLoading(() => {
                 if (admin.suspended) { setShowSuspend(true) } else { setShowLocalTransfer(true) }
               })},
-              { icon: <DepositIcon />, label: 'Deposit', action: () => openWithLoading(() => setShowDeposit(true)) },
-              { icon: <CryptoIcon />, label: 'Crypto', action: () => openWithLoading(() => setShowCrypto(true)) },
-              { icon: <CardIcon />, label: 'Card', action: () => openWithLoading(() => setShowBankCard(true)) },
+              { icon: <DepositIcon />, label: t('deposit'), action: () => openWithLoading(() => setShowDeposit(true)) },
+              { icon: <CryptoIcon />, label: t('crypto'), action: () => openWithLoading(() => setShowCrypto(true)) },
+              { icon: <CardIcon />, label: t('card'), action: () => openWithLoading(() => setShowBankCard(true)) },
             ].map((a) => (
               <button key={a.label} className="db-quick-btn" onClick={a.action}>
                 <div className="db-quick-icon">{a.icon}</div>
@@ -717,10 +740,10 @@ export default function Dashboard({ profile, onLogout }) {
 
       {/* ── Accounts ─────────────────────────────────────── */}
       <section className="db-section">
-        <h2 className="db-section-title">Accounts</h2>
+        <h2 className="db-section-title">{t('accounts')}</h2>
         <div className="db-accounts-row">
           <div className="db-account-card db-account-card--green">
-            <span className="db-account-type">Current Account</span>
+            <span className="db-account-type">{t('currentAccount')}</span>
             <p className="db-account-bal font-mono" style={{ color: '#000000' }}>
               {balanceLoading
                 ? <span style={{ opacity: 0.5, fontSize: '0.85rem' }}>Loading…</span>
@@ -731,7 +754,7 @@ export default function Dashboard({ profile, onLogout }) {
             {accountNumber && <span className="db-account-num">●●●● {accountNumber.slice(-4)}</span>}
           </div>
           <div className="db-account-card db-account-card--dark">
-            <span className="db-account-type">Savings Vault</span>
+            <span className="db-account-type">{t('savingsVault')}</span>
             <p className="db-account-bal font-mono" style={{ color: '#000000' }}>
               {balanceLoading
                 ? <span style={{ opacity: 0.5, fontSize: '0.85rem' }}>Loading…</span>
@@ -799,25 +822,25 @@ export default function Dashboard({ profile, onLogout }) {
 
       {/* ── Move Money Hub ───────────────────────────────── */}
       <section className="db-section">
-        <h2 className="db-section-title">Move Money</h2>
+        <h2 className="db-section-title">{t('moveMoney')}</h2>
         <div className="db-move-grid">
           {[
-            { icon: <QuickPayIcon />, label: 'Quick Pay', desc: 'Instant transfer', action: () => openWithLoading(() => {
+            { icon: <QuickPayIcon />, label: t('quickPay'), desc: t('instantTransfer'), action: () => openWithLoading(() => {
               if (admin.suspended) { setShowSuspend(true) } else { setShowLocalTransfer(true) }
             })},
-            { icon: <WireIcon />, label: 'Wire Transfer', desc: 'International', action: () => openWithLoading(() => {
+            { icon: <WireIcon />, label: t('wireTransfer'), desc: t('international'), action: () => openWithLoading(() => {
               if (admin.suspended) { setShowSuspend(true) } else { setShowIntlTransfer(true) }
             })},
-            { icon: <ScheduleIcon />, label: 'Scheduled', desc: 'Set & forget', action: () => openWithLoading(() => {
+            { icon: <ScheduleIcon />, label: t('scheduled'), desc: t('setAndForget'), action: () => openWithLoading(() => {
               if (admin.suspended) { setShowSuspend(true) } else { setShowScheduled(true) }
             })},
-            { icon: <ExchangeIcon />, label: 'Global Exchange', desc: 'FX converter', action: () => openWithLoading(() => {
+            { icon: <ExchangeIcon />, label: t('globalExchange'), desc: t('fxConverter'), action: () => openWithLoading(() => {
               setExchangeUsd(''); setShowExchange(true)
             })},
-            { icon: <BillPayIcon />, label: 'Bill Payment', desc: 'Pay your bills', action: () => openWithLoading(() => {
+            { icon: <BillPayIcon />, label: t('billPayment'), desc: t('payYourBills'), action: () => openWithLoading(() => {
               if (admin.suspended) { setShowSuspend(true) } else { setShowBillPay(true) }
             })},
-            { icon: <InvestIcon />, label: 'Invest', desc: 'Stocks & ETFs', action: () => openWithLoading(() => {
+            { icon: <InvestIcon />, label: t('invest'), desc: t('stocksAndEtfs'), action: () => openWithLoading(() => {
               if (admin.suspended) { setShowSuspend(true) } else { setShowInvestment(true) }
             })},
           ].map((m) => (
@@ -858,10 +881,10 @@ export default function Dashboard({ profile, onLogout }) {
         const weekTotal = days.reduce((s, d) => s + d.total, 0)
         return (
           <section className="db-section">
-            <h2 className="db-section-title">Weekly Spending</h2>
+            <h2 className="db-section-title">{t('weeklySpending')}</h2>
             <div className="wsc-glass">
               <div className="wsc-header">
-                <span className="wsc-label">Total Spent This Week</span>
+                <span className="wsc-label">{t('totalSpentThisWeek')}</span>
                 <span className="wsc-total font-mono">${weekTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="wsc-chart">
@@ -885,7 +908,7 @@ export default function Dashboard({ profile, onLogout }) {
       {/* ── Transactions & Statements ──────────────────── */}
       <section className="db-section">
         <div className="db-txn-header">
-          <h3 className="db-txn-title">Recent Activity</h3>
+          <h3 className="db-txn-title">{t('recentActivity')}</h3>
         </div>
         {(() => {
           const history = JSON.parse(localStorage.getItem('transfer_history') || '[]')
@@ -903,11 +926,11 @@ export default function Dashboard({ profile, onLogout }) {
               ))}
             </div>
           ) : (
-            <div className="db-statements-empty"><p>No transactions yet.</p></div>
+            <div className="db-statements-empty"><p>{t('noTransactionsYet')}</p></div>
           )
         })()}
         <button className="db-view-all-btn" onClick={() => openWithLoading(() => setShowTxnHistory(true))}>
-          <span>View All Transactions & Statements</span>
+          <span>{t('viewAllTransactions')}</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
       </section>
@@ -935,8 +958,8 @@ export default function Dashboard({ profile, onLogout }) {
             <div className="gx-modal" onClick={(e) => e.stopPropagation()}>
               <button className="gx-close" onClick={() => setShowExchange(false)}>&times;</button>
               <div className="gx-header-icon">💱</div>
-              <h2 className="gx-title">Global Exchange</h2>
-              <p className="gx-subtitle">Real-time 2026 FX rates from USD</p>
+              <h2 className="gx-title">{t('globalExchange')}</h2>
+              <p className="gx-subtitle">{t('realTimeFxRates')}</p>
 
               <div className="gx-input-wrap">
                 <span className="gx-input-prefix">$</span>
@@ -980,7 +1003,7 @@ export default function Dashboard({ profile, onLogout }) {
                     if (admin.suspended) { setShowSuspend(true) } else { setShowIntlTransfer(true) }
                   }}
                 >
-                  Use this Rate → International Transfer
+                  {t('useThisRate')}
                 </button>
               )}
             </div>
@@ -999,7 +1022,7 @@ export default function Dashboard({ profile, onLogout }) {
           <div className="nc-overlay" onClick={() => setShowNotifCenter(false)}>
             <div className="nc-panel" onClick={(e) => e.stopPropagation()}>
               <div className="nc-header">
-                <h2 className="nc-title">Notifications</h2>
+                <h2 className="nc-title">{t('notifications')}</h2>
                 <button className="nc-close" onClick={() => setShowNotifCenter(false)}>&times;</button>
               </div>
 
@@ -1009,7 +1032,7 @@ export default function Dashboard({ profile, onLogout }) {
                   <div className="nc-item nc-item--system">
                     <div className="nc-item-icon nc-item-icon--system">📢</div>
                     <div className="nc-item-body">
-                      <span className="nc-item-title">System Alert</span>
+                    <span className="nc-item-title">{t('systemAlert')}</span>
                       <span className="nc-item-msg">{sysItem.message}</span>
                       {sysItem.timestamp && <span className="nc-item-time">{sysItem.timestamp}</span>}
                     </div>
@@ -1048,7 +1071,7 @@ export default function Dashboard({ profile, onLogout }) {
                 {allNotifs.length === 0 && !sysItem && history.length === 0 && (
                   <div className="nc-empty">
                     <span className="nc-empty-icon">🔔</span>
-                    <p>No notifications yet</p>
+                  <p>{t('noNotifications')}</p>
                   </div>
                 )}
               </div>
@@ -1060,11 +1083,11 @@ export default function Dashboard({ profile, onLogout }) {
       {/* ── Bottom nav ───────────────────────────────────── */}
       <nav className="db-bottomnav">
         {[
-          { id: 'home', icon: <HomeNavIcon />, label: 'Home' },
-          { id: 'cards', icon: <CardsNavIcon />, label: 'Cards' },
-          { id: 'services', icon: <WealthNavIcon />, label: 'Services' },
-          { id: 'notifications', icon: <NotifNavIcon hasUnread={hasUnread} />, label: 'Alerts' },
-          { id: 'support', icon: <SupportNavIcon />, label: 'Support' },
+          { id: 'home', icon: <HomeNavIcon />, label: t('home') },
+          { id: 'cards', icon: <CardsNavIcon />, label: t('cards') },
+          { id: 'services', icon: <WealthNavIcon />, label: t('services') },
+          { id: 'notifications', icon: <NotifNavIcon hasUnread={hasUnread} />, label: t('alerts') },
+          { id: 'support', icon: <SupportNavIcon />, label: t('support') },
         ].map((n) => (
           <button
             key={n.id}

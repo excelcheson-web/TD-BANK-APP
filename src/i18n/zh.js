@@ -1,0 +1,18 @@
+export default {
+  loading:'加载中…',cancel:'取消',close:'关闭',submit:'提交',confirm:'确认',back:'返回',continue:'继续',save:'保存',yes:'是',no:'否',ok:'好的',error:'错误',success:'成功',retry:'重试',search:'搜索',noData:'暂无数据',
+  signIn:'登录',signOut:'退出',signUp:'创建账户',email:'邮箱或用户名',password:'密码',confirmPassword:'确认密码',forgotPassword:'忘记密码？',noAccount:'没有账户？',createOne:'创建',signInToContinue:'登录以继续',verifyingCredentials:'验证中…',authenticating:'认证中…',securingSession:'建立安全会话…',invalidCredentials:'邮箱或密码无效。',tooManyAttempts:'尝试过多，请稍后再试。',loginFailed:'登录失败。',orSignInWith:'或使用',faceId:'面容ID',scanning:'扫描中…',accessDenied:'访问被拒绝',verified:'已验证 ✓',
+  resetPassword:'重置密码',enterRegisteredEmail:'输入注册邮箱验证身份。',verifyEmail:'验证邮箱',setNewPin:'设置新PIN',createNewPin:'创建4位数PIN。',enterNewPin:'新PIN',resetPin:'重置PIN',pinResetSuccess:'PIN重置成功',pinUpdated:'PIN已更新。',noAccountFound:'未找到账户。',emailNoMatch:'邮箱不匹配。',pinMinDigits:'PIN至少4位。',
+  identityDetails:'身份信息',letsGetToKnow:'让我们了解您',fullName:'全名',emailAddress:'邮箱地址',passwordLabel:'密码',minChars:'至少6个字符',reEnterPassword:'重新输入密码',passwordsNoMatch:'密码不匹配',passwordTooShort:'至少6个字符',invalidEmail:'请输入有效邮箱',dateOfBirth:'出生日期',profilePhoto:'头像（可选）',uploadProfilePhoto:'上传头像',tapToChange:'点击更换',willAppearOnDashboard:'显示在仪表板上',
+  accountType:'账户类型',savingsAccount:'储蓄账户',checkingAccount:'支票账户',currentAccount:'活期账户',fixedDeposit:'定期存款',secureAccess:'安全访问',protectYourAccount:'保护您的账户',set6DigitPin:'设置6位交易PIN',confirmPinLabel:'确认PIN',enterAllDigits:'请输入6位数字',pinsNoMatch:'PIN不匹配',biometricAccess:'生物识别',useFingerprintOrFaceId:'指纹或面容ID登录',identity:'身份',security:'安全',
+  availableBalance:'可用余额',unableToLoadBalance:'无法加载余额',info:'信息',transfer:'转账',deposit:'存款',crypto:'加密货币',card:'银行卡',accounts:'账户',savingsVault:'储蓄金库',unavailable:'不可用',
+  moveMoney:'转移资金',quickPay:'快速支付',instantTransfer:'即时转账',wireTransfer:'电汇',international:'国际',scheduled:'定时',setAndForget:'设置即忘',globalExchange:'全球汇兑',fxConverter:'外汇转换',billPayment:'账单支付',payYourBills:'支付账单',invest:'投资',stocksAndEtfs:'股票和ETF',
+  weeklySpending:'每周支出',totalSpentThisWeek:'本周总支出',recentActivity:'最近活动',noTransactionsYet:'暂无交易。',viewAllTransactions:'查看全部',
+  home:'首页',cards:'银行卡',services:'服务',alerts:'提醒',support:'客服',
+  goodMorning:'早上好',goodAfternoon:'下午好',goodEvening:'晚上好',welcomeToTD:'欢迎来到TD银行',
+  profileSettings:'个人设置',privacy:'隐私',securityMenu:'安全',lightMode:'浅色模式',darkMode:'深色模式',logout:'退出',
+  notifications:'通知',creditAlert:'入账提醒',debitAlert:'出账提醒',systemAlert:'系统提醒',noNotifications:'暂无通知',dismiss:'关闭',
+  transfersSuspended:'转账已暂停',accountSuspendedMsg:'账户已暂停。请联系客服。',understood:'知道了',
+  realTimeFxRates:'实时汇率（美元）',useThisRate:'使用汇率 → 国际转账',
+  receiveMoneyAnywhere:'从任何地方收款',instantIntlTransfers:'零手续费国际转账',referAndEarn:'推荐赚钱',inviteFriends:'邀请朋友赚奖励',trustedByMillions:'数百万人信赖',mostConvenientBank:'自1852年最便捷银行',referralLinkCopied:'链接已复制！',
+  verificationEmailSent:'验证邮件已发送',connectionError:'连接错误',emailConfirmationSent:'确认邮件已发送',language:'语言',
+}
