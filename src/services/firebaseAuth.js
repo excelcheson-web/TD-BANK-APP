@@ -83,6 +83,14 @@ export async function registerUser(userData) {
   return profile
 }
 
+// Helper: race a promise against a timeout (ms). Rejects with 'timeout' on expiry.
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ])
+}
+
 export async function loginUser(email, password) {
   if (!email || !password) {
     throw new Error('Email and password are required to log in.')
@@ -91,10 +99,10 @@ export async function loginUser(email, password) {
   // Sign in with email/password instead of anonymous
   const { user } = await signInWithEmailAndPassword(auth, email, password)
 
-  // Try to fetch profile from Firestore
+  // Try to fetch profile from Firestore (with 5s timeout to avoid hanging on localhost)
   let snap = null
   try {
-    snap = await getDoc(doc(db, 'profiles', user.uid))
+    snap = await withTimeout(getDoc(doc(db, 'profiles', user.uid)), 5000)
   } catch (err) {
     console.warn('[loginUser] Firestore read failed, falling back to localStorage:', err.message)
   }
@@ -128,11 +136,11 @@ export async function logoutUser() {
 
 export async function getUserProfile(uid) {
   try {
-    const snap = await getDoc(doc(db, 'profiles', uid))
+    const snap = await withTimeout(getDoc(doc(db, 'profiles', uid)), 5000)
     if (!snap.exists()) return null
     return normalizeProfile(uid, snap.data())
   } catch (err) {
-    console.error('[firebaseAuth] getUserProfile error:', err)
+    console.error('[firebaseAuth] getUserProfile error:', err.message)
     return null
   }
 }
