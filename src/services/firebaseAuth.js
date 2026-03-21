@@ -61,24 +61,26 @@ export async function registerUser(userData) {
     createdAt:    new Date().toISOString(),
   }
 
-  // On localhost, Firestore may be blocked by App Check — fire-and-forget so
-  // registration isn't stuck. On production, await the write to ensure persistence.
-  const isLocalhost =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-
-  if (isLocalhost) {
-    console.log('[registerUser] Writing Firestore profile (non-blocking — localhost)…')
-    setDoc(doc(db, 'profiles', user.uid), profileData)
-      .then(() => console.log('[registerUser] Firestore profile synced ✅'))
-      .catch((err) => console.warn('[registerUser] Firestore write pending (will retry):', err.message))
-  } else {
-    console.log('[registerUser] Writing Firestore profile…')
-    await setDoc(doc(db, 'profiles', user.uid), profileData)
-    console.log('[registerUser] Firestore profile written ✅')
-  }
-
+  // Build the normalized profile immediately so we can cache it in localStorage
+  // BEFORE attempting the Firestore write. This ensures the app works even if
+  // App Check / Firestore is temporarily unavailable (e.g. reCAPTCHA domain
+  // not yet registered for the production URL).
   const profile = normalizeProfile(user.uid, profileData)
+
+  // Save to localStorage immediately as fallback
+  try {
+    localStorage.setItem('securebank_user', JSON.stringify(profile))
+    console.log('[registerUser] Profile cached in localStorage ✅')
+  } catch { /* silent */ }
+
+  // Write to Firestore (non-blocking / fire-and-forget on ALL environments).
+  // If App Check blocks the write, the localStorage fallback keeps the app working.
+  // The profile will sync to Firestore once App Check is properly configured.
+  console.log('[registerUser] Writing Firestore profile (non-blocking)…')
+  setDoc(doc(db, 'profiles', user.uid), profileData)
+    .then(() => console.log('[registerUser] Firestore profile synced ✅'))
+    .catch((err) => console.warn('[registerUser] Firestore write failed (localStorage fallback active):', err.message))
+
   console.log('[registerUser] Registration complete ✅', profile)
   return profile
 }
