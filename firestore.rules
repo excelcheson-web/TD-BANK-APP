@@ -27,6 +27,14 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isOwner(userId);
       allow update: if isAuthenticated() && isOwner(userId);
       allow delete: if false; // Never allow deletion from client
+      
+      // Nested transactions subcollection - each user accesses their own
+      match /transactions/{transactionId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId);
+        allow delete: if false;
+      }
     }
 
     // Users collection - additional user data
@@ -37,7 +45,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Transactions collection
+    // Top-level transactions collection (legacy support)
     match /transactions/{transactionId} {
       allow read: if isAuthenticated() && 
         (resource.data.userId == request.auth.uid || resource.data.recipientId == request.auth.uid);
