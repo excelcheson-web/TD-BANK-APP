@@ -131,7 +131,8 @@ export default function AdminApp() {
   const loadAllUsers = async () => {
     setUsersLoading(true)
     try {
-      const users = await fetchAllUsers()
+      // Use force: true to bypass circuit breaker for admin panel
+      const users = await fetchAllUsers({ force: true })
       setAllUsers(users)
       showToast('success', `Loaded ${users.length} users`)
     } catch (err) {

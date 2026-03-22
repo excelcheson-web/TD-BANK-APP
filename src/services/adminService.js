@@ -151,10 +151,14 @@ async function withRetry(operation, maxRetries = 3, delay = 1000) {
 /**
  * Fetch all users from Firestore profiles collection.
  * Returns array of user objects with uid, email, name, balance, etc.
+ * @param {Object} options - Options object
+ * @param {boolean} options.force - If true, bypass circuit breaker (for admin panel)
  */
-export async function fetchAllUsers() {
-  // Check global circuit breaker first
-  if (!firestoreCircuitBreaker.canOperate()) {
+export async function fetchAllUsers(options = {}) {
+  const { force = false } = options
+  
+  // Check global circuit breaker first (unless force is true)
+  if (!force && !firestoreCircuitBreaker.canOperate()) {
     console.warn('[adminService] Global circuit breaker OPEN - skipping fetchAllUsers')
     // Return empty array instead of throwing - let UI handle gracefully
     return []
@@ -165,6 +169,7 @@ export async function fetchAllUsers() {
     
     // Reset circuit breaker on success
     firestoreCircuitBreaker.failureCount = 0
+    firestoreCircuitBreaker.isOpen = false
     
     return snapshot.docs.map((d) => {
       const data = d.data()
