@@ -4,16 +4,15 @@ import { getFirestore } from 'firebase/firestore'
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Firebase config — apiKey is read from .env so it stays off GitHub.
-// All other values are non-secret project identifiers.
+// Firebase config — uses environment variables with fallback to production values
 // ─────────────────────────────────────────────────────────────────────────────
 const firebaseConfig = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        'td-project-pro.firebaseapp.com',
-  projectId:         'td-project-pro',
-  storageBucket:     'td-project-pro.firebasestorage.app',
-  messagingSenderId: '750514900015',
-  appId:             '1:750514900015:web:c49df7bdf3503d2faccada',
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDt0vYV7xfhoNHsCc6XnUfTFQl6SkBNFyk',
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'login-tdpay.net',
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID || 'td-project-pro',
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'td-project-pro.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '750514900015',
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID || '1:750514900015:web:c49df7bdf3503d2faccada',
 }
 // ─────────────────────────────────────────────────────────────────────────────
 

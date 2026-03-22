@@ -61,11 +61,11 @@ export default function LoginScreen({ onLogin, onRegister }) {
   const [forgotStep, setForgotStep] = useState('email') // email | reset | done
   const [newPin, setNewPin] = useState('')
   const [forgotError, setForgotError] = useState('')
-  // reCAPTCHA is only active when the site key env var is provided.
-  // On localhost (no VITE_RECAPTCHA_SITE_KEY), skip it entirely so the
-  // missing-sitekey error never crashes the React tree.
-  const RECAPTCHA_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''
-  const [recaptchaToken, setRecaptchaToken] = useState(RECAPTCHA_KEY ? null : 'dev-bypass')
+  // reCAPTCHA configuration - uses environment variable or the provided site key
+  // On localhost without env var, it uses the provided key for testing
+  const RECAPTCHA_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6LfAAZQsAAAAAEhaw-aoOh3zKMPwPfqT07OBQH5U'
+  const [recaptchaToken, setRecaptchaToken] = useState(null)
+  const [recaptchaError, setRecaptchaError] = useState('')
   const recaptchaRef = useRef(null)
 
   const getStoredUser = () => {
@@ -272,14 +272,27 @@ export default function LoginScreen({ onLogin, onRegister }) {
 
           {/* reCAPTCHA — only rendered when site key is configured */}
           {RECAPTCHA_KEY && (
-            <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '8px 0' }}>
               <ReCAPTCHA
                 ref={recaptchaRef}
                 sitekey={RECAPTCHA_KEY}
                 theme="dark"
-                onChange={(token) => setRecaptchaToken(token)}
+                onChange={(token) => {
+                  setRecaptchaToken(token)
+                  setRecaptchaError('') // Clear error on successful verification
+                }}
                 onExpired={() => setRecaptchaToken(null)}
+                onError={() => {
+                  setRecaptchaError('reCAPTCHA failed to load. Please refresh the page or try again later.')
+                  console.error('[reCAPTCHA] Error loading reCAPTCHA service')
+                }}
               />
+              {/* reCAPTCHA Error Message */}
+              {recaptchaError && (
+                <p className="login-error" style={{ marginTop: '8px', fontSize: '12px' }}>
+                  {recaptchaError}
+                </p>
+              )}
             </div>
           )}
 
