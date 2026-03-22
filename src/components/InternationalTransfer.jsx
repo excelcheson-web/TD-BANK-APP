@@ -3,6 +3,11 @@ import { generateTransferPDF } from '../services/pdfReceipt'
 import { sendTransferEmail } from '../services/emailNotification'
 import { sendOtp, verifyOtp } from '../services/otpService'
 import { saveTransaction } from '../services/transactionService'
+import { checkUserSuspensionStatus } from '../services/adminService'
+
+function getUserUid() {
+  try { return JSON.parse(localStorage.getItem('securebank_user') || '{}').uid || '' } catch { return '' }
+}
 
 function genRef() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -82,14 +87,15 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Check for account suspension after form input
-    const admin = JSON.parse(localStorage.getItem('securebank_admin') || '{}')
-    if (admin.suspended) {
+    // Check for account suspension from Firestore (enforced across all devices)
+    const uid = getUserUid()
+    const suspensionStatus = await checkUserSuspensionStatus(uid)
+    if (suspensionStatus.suspended) {
       window.dispatchEvent(new CustomEvent('show-suspend-modal', { 
-        detail: { reason: admin.suspendReason || 'Your account has been temporarily restricted.' }
+        detail: { reason: suspensionStatus.reason }
       }))
       return
     }

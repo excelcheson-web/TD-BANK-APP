@@ -755,9 +755,9 @@ export async function updateUserProfilePicture(uid, profilePicUrl) {
 // ── App-Side Balance Sync (for deposits, transfers, etc.) ───────────────────
 
 /**
- * Sync balance update from app to Firestore (debounced).
- * Call this from transfer components, deposit overlay, etc.
- * This is fire-and-forget: localStorage updates immediately, Firestore syncs in background.
+ * Sync balance update from Firestore to localStorage only.
+ * Firestore writes are DISABLED to prevent resource-exhausted errors.
+ * All data persistence is now handled through localStorage.
  */
 export function syncBalanceToFirestore(uid, newBalance) {
   if (!uid) {
@@ -765,32 +765,76 @@ export function syncBalanceToFirestore(uid, newBalance) {
     return
   }
   
-  // Check global circuit breaker first
-  if (!firestoreCircuitBreaker.canOperate()) {
-    console.warn('[adminService] Global circuit breaker OPEN - skipping Firestore sync')
-    // Still update localStorage
-    broadcastToApp(uid, { balance: newBalance })
-    return
-  }
-  
-  // Broadcast to localStorage immediately
+  // ONLY update localStorage - Firestore writes are disabled to prevent quota exhaustion
   broadcastToApp(uid, { balance: newBalance })
   
-  // Debounced Firestore write
-  debouncedWrite(`balance-${uid}`, async () => {
-    try {
-      const userRef = doc(db, 'profiles', uid)
-      await withRetry(async () => {
-        await updateDoc(userRef, { balance: newBalance })
-      })
-      console.log(`[adminService] Balance ${newBalance} synced to Firestore for ${uid}`)
-    } catch (err) {
-      console.error('[adminService] syncBalanceToFirestore failed:', err.message)
-      // Record failure in global circuit breaker
-      if (err.code === 'resource-exhausted') {
-        firestoreCircuitBreaker.recordFailure('resource-exhausted')
-      }
-      // Don't throw - app continues working with localStorage
+  // Log that we're skipping Firestore to help with debugging
+  console.log(`[adminService] Balance ${newBalance} saved to localStorage only (Firestore writes disabled)`)
+  
+  // NOTE: Firestore writes are intentionally disabled to prevent resource-exhausted errors.
+  // The app now uses localStorage as the primary data store.
+  // If you need to sync to Firestore, use the admin panel which has proper rate limiting.
+}
+
+/**
+ * Check if a user's account is suspended from Firestore.
+ * This is used by transfer components to enforce suspension across all devices.
+ * @param {string} uid - User ID
+ * @returns {Promise<{suspended: boolean, reason: string}>}
+ */
+export async function checkUserSuspensionStatus(uid) {
+  if (!uid) {
+    return { suspended: false, reason: '' }
+  }
+  
+  // First check localStorage (fast path)
+  try {
+    const admin = JSON.parse(localStorage.getItem('securebank_admin') || '{}')
+    if (admin.suspended) {
+      return { suspended: true, reason: admin.suspendReason || 'Your account has been temporarily restricted.' }
     }
-  }, MIN_WRITE_INTERVAL)
+  } catch { /* ignore */ }
+  
+  // Check global circuit breaker
+  if (!firestoreCircuitBreaker.canOperate()) {
+    console.warn('[adminService] Circuit breaker open - using localStorage for suspension check')
+    return { suspended: false, reason: '' }
+  }
+  
+  try {
+    const userRef = doc(db, 'profiles', uid)
+    const userSnap = await getDoc(userRef)
+    
+    if (!userSnap.exists()) {
+      return { suspended: false, reason: '' }
+    }
+    
+    const data = userSnap.data()
+    const isSuspended = data.suspended === true
+    
+    // Update localStorage with latest status for offline use
+    if (isSuspended) {
+      localStorage.setItem('securebank_admin', JSON.stringify({
+        suspended: true,
+        suspendReason: data.suspendReason || 'Your account has been temporarily restricted.'
+      }))
+    }
+    
+    return { 
+      suspended: isSuspended, 
+      reason: data.suspendReason || 'Your account has been temporarily restricted.' 
+    }
+  } catch (err) {
+    console.error('[adminService] checkUserSuspensionStatus failed:', err.message)
+    // On error, fall back to localStorage
+    try {
+      const admin = JSON.parse(localStorage.getItem('securebank_admin') || '{}')
+      return { 
+        suspended: admin.suspended || false, 
+        reason: admin.suspendReason || 'Your account has been temporarily restricted.' 
+      }
+    } catch {
+      return { suspended: false, reason: '' }
+    }
+  }
 }
