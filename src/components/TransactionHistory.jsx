@@ -21,6 +21,9 @@ const TYPE_LABELS = {
   international: 'Intl Wire',
   bill_payment: 'Bill Payment',
   investment: 'Investment',
+  deposit: 'Deposit',
+  credit: 'Credit',
+  incoming: 'Incoming Transfer',
 }
 
 const PERIOD_OPTIONS = [
@@ -66,11 +69,13 @@ export default function TransactionHistory({ onClose }) {
         return (
           (t.beneficiary || '').toLowerCase().includes(q) ||
           (t.ref || '').toLowerCase().includes(q) ||
-          (t.type || '').toLowerCase().includes(q)
+          (t.type || '').toLowerCase().includes(q) ||
+          (t.sender || '').toLowerCase().includes(q) ||
+          (t.description || '').toLowerCase().includes(q)
         )
       }
       return true
-    })
+    }).slice(0, 15) // Show up to 15 transactions
   }, [allTxns, period, search])
 
   // Group by date
@@ -126,8 +131,18 @@ export default function TransactionHistory({ onClose }) {
     }, 5000)
   }
 
+  // Helper to determine if transaction is credit (green) or debit (red)
+  const isCredit = (t) => {
+    const creditTypes = ['deposit', 'credit', 'payroll', 'refund', 'incoming']
+    return creditTypes.includes(t.type) || t.direction === 'incoming'
+  }
+
   // ── Transactions Tab ──
-  const renderTransactions = () => (
+  const renderTransactions = () => {
+    const totalDebited = filtered.reduce((s, t) => s + (isCredit(t) ? 0 : (t.amount || 0)), 0)
+    const totalCredited = filtered.reduce((s, t) => s + (isCredit(t) ? (Math.abs(t.amount) || 0) : 0), 0)
+
+    return (
     <div className="th-content">
       {/* Search + Period filter */}
       <div className="th-filters">
@@ -157,8 +172,12 @@ export default function TransactionHistory({ onClose }) {
           <strong className="th-summary-value">{filtered.length}</strong>
         </div>
         <div className="th-summary-item">
+          <span className="th-summary-label">Total Credited</span>
+          <strong className="th-summary-value th-credit">+${fmt(totalCredited)}</strong>
+        </div>
+        <div className="th-summary-item">
           <span className="th-summary-label">Total Debited</span>
-          <strong className="th-summary-value th-debit">-${fmt(filtered.reduce((s, t) => s + (t.amount || 0), 0))}</strong>
+          <strong className="th-summary-value th-debit">-${fmt(totalDebited)}</strong>
         </div>
       </div>
 
@@ -173,29 +192,37 @@ export default function TransactionHistory({ onClose }) {
         ) : grouped.map(([dateLabel, txns]) => (
           <div key={dateLabel} className="th-group">
             <p className="th-group-date">{dateLabel}</p>
-            {txns.map((t) => (
-              <div key={t.id} className="th-txn" onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}>
-                <div className="th-txn-row">
-                  <div className="th-txn-icon-wrap">
-                    <span className={`th-txn-type-dot th-txn-type-dot--${t.type}`} />
+              {txns.map((t) => {
+                const credit = isCredit(t)
+                const displayAmount = Math.abs(t.amount || 0)
+                return (
+                <div key={t.id} className={`th-txn ${credit ? 'th-txn--incoming' : 'th-txn--outgoing'}`} onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}>
+                  <div className="th-txn-row">
+                    <div className="th-txn-icon-wrap">
+                      <span className={`th-txn-type-dot th-txn-type-dot--${t.type} ${credit ? 'th-txn-type-dot--incoming' : ''}`} />
+                    </div>
+                    <div className="th-txn-info">
+                      <span className="th-txn-name">{t.beneficiary || t.sender || 'Unknown'}</span>
+                      <span className="th-txn-meta">{TYPE_LABELS[t.type] || t.type} · {t.ref}</span>
+                    </div>
+                    <div className="th-txn-amounts">
+                      <span className={`th-txn-amount font-mono ${credit ? 'th-txn-amount--credit' : 'th-txn-amount--debit'}`}>
+                        {credit ? '+' : '-'}${fmt(displayAmount)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="th-txn-info">
-                    <span className="th-txn-name">{t.beneficiary || 'Unknown'}</span>
-                    <span className="th-txn-meta">{TYPE_LABELS[t.type] || t.type} · {t.ref}</span>
-                  </div>
-                  <div className="th-txn-amounts">
-                    <span className="th-txn-amount font-mono">-${fmt(t.amount)}</span>
-                  </div>
-                </div>
                 {expandedId === t.id && (
                   <div className="th-txn-detail">
                     <div className="th-detail-row"><span>Reference</span><strong>{t.ref}</strong></div>
                     <div className="th-detail-row"><span>Type</span><strong>{TYPE_LABELS[t.type] || t.type}</strong></div>
-                    <div className="th-detail-row"><span>Beneficiary</span><strong>{t.beneficiary}</strong></div>
+                    <div className="th-detail-row"><span>Direction</span><strong>{credit ? 'Incoming (Credit)' : 'Outgoing (Debit)'}</strong></div>
+                    {t.sender && <div className="th-detail-row"><span>Sender</span><strong>{t.sender}</strong></div>}
+                    <div className="th-detail-row"><span>{credit ? 'Sender' : 'Beneficiary'}</span><strong>{credit ? (t.sender || t.beneficiary) : t.beneficiary}</strong></div>
                     {t.accountNumber && <div className="th-detail-row"><span>Account</span><strong>{t.accountNumber}</strong></div>}
                     {t.bankName && <div className="th-detail-row"><span>Bank</span><strong>{t.bankName}</strong></div>}
                     {t.country && <div className="th-detail-row"><span>Country</span><strong>{t.country}</strong></div>}
-                    <div className="th-detail-row"><span>Amount</span><strong>-${fmt(t.amount)}</strong></div>
+                    {t.description && <div className="th-detail-row"><span>Description</span><strong>{t.description}</strong></div>}
+                    <div className="th-detail-row"><span>Amount</span><strong className={credit ? 'th-credit' : ''}>{credit ? '+' : '-'}${fmt(displayAmount)}</strong></div>
                     <div className="th-detail-row"><span>Date</span><strong>{new Date(t.date).toLocaleString()}</strong></div>
                     <button className="th-download-btn" onClick={(e) => { e.stopPropagation(); generateTransferPDF(t) }}>
                       ↓ Download Receipt
@@ -203,12 +230,14 @@ export default function TransactionHistory({ onClose }) {
                   </div>
                 )}
               </div>
-            ))}
+              )
+            })}
           </div>
         ))}
       </div>
     </div>
-  )
+    )
+  }
 
   // ── Statements Tab ──
   const renderStatements = () => {

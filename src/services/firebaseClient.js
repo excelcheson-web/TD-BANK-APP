@@ -22,6 +22,58 @@ const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db   = getFirestore(app)
 
+// ── Global Circuit Breaker for Firestore Quota Management ────────────────────
+// This prevents resource-exhausted errors by tracking failures and stopping
+// all Firestore operations when quota is exceeded.
+// ─────────────────────────────────────────────────────────────────────────────
+export const firestoreCircuitBreaker = {
+  failureCount: 0,
+  lastFailureTime: 0,
+  isOpen: false,
+  maxFailures: 2,
+  resetTimeout: 600000, // 10 minutes - very long cooldown
+  
+  recordFailure(errorCode) {
+    if (errorCode === 'resource-exhausted') {
+      this.failureCount++
+      this.lastFailureTime = Date.now()
+      if (this.failureCount >= this.maxFailures) {
+        this.isOpen = true
+        console.error('[FirestoreCircuitBreaker] OPEN - All Firestore writes blocked for 10 minutes')
+      }
+    }
+  },
+  
+  canOperate() {
+    if (!this.isOpen) return true
+    const timeSinceLastFailure = Date.now() - this.lastFailureTime
+    if (timeSinceLastFailure > this.resetTimeout) {
+      this.isOpen = false
+      this.failureCount = 0
+      console.log('[FirestoreCircuitBreaker] RESET - Firestore operations resumed')
+      return true
+    }
+    return false
+  },
+  
+  getStatus() {
+    return {
+      isOpen: this.isOpen,
+      failures: this.failureCount,
+      timeUntilReset: this.isOpen ? this.resetTimeout - (Date.now() - this.lastFailureTime) : 0
+    }
+  }
+}
+
+// ── Offline Persistence DISABLED ──────────────────────────────────────────────
+// Persistence is disabled to prevent multi-tab failed-precondition errors.
+// The app uses memory cache which works fine for our use case.
+// All data is backed up to localStorage as the primary storage mechanism.
+// Firestore is only used as a secondary sync when quota allows.
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTE: enableIndexedDbPersistence is deprecated and causes issues with multi-tab
+// scenarios. We intentionally do NOT enable it to avoid console spam and errors.
+
 // ── App Check (reCAPTCHA v3) ──────────────────────────────────────────────────
 // Firestore has App Check enforcement enabled, so we MUST initialize App Check
 // on every environment — including localhost.

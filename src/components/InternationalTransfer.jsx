@@ -46,6 +46,7 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
     bankName: '',
     country: '',
     amount: initialAmount || '',
+    description: '',
   })
   const [error, setError] = useState('')
   const [receipt, setReceipt] = useState(null)
@@ -83,6 +84,16 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    
+    // Check for account suspension after form input
+    const admin = JSON.parse(localStorage.getItem('securebank_admin') || '{}')
+    if (admin.suspended) {
+      window.dispatchEvent(new CustomEvent('show-suspend-modal', { 
+        detail: { reason: admin.suspendReason || 'Your account has been temporarily restricted.' }
+      }))
+      return
+    }
+    
     const { beneficiary, iban, swift, bankName, country, amount } = form
 
     if (!beneficiary.trim() || !iban.trim() || !swift.trim() || !bankName.trim() || !country.trim() || !amount.trim()) {
@@ -114,6 +125,7 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
       bankName: bankName.trim(),
       country: country.trim(),
       amount: amt,
+      description: form.description.trim(),
       balanceAfter: newBalance,
       date: new Date().toISOString(),
     })
@@ -312,6 +324,11 @@ export default function InternationalTransfer({ balance, onClose, onBalanceUpdat
           <div className="tf-field">
             <label className="tf-label">Amount ($)</label>
             <input className="tf-input tf-input--amount" type="text" inputMode="decimal" placeholder="0.00" value={form.amount} onChange={(e) => update('amount', e.target.value)} />
+          </div>
+
+          <div className="tf-field">
+            <label className="tf-label">Description of Payment</label>
+            <input className="tf-input" placeholder="e.g. Invoice payment, Family support, etc." value={form.description} onChange={(e) => update('description', e.target.value)} />
           </div>
 
           {error && <div className="tf-error">{error}</div>}

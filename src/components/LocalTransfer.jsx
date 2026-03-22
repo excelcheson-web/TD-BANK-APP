@@ -80,6 +80,16 @@ export default function LocalTransfer({ balance, onClose, onBalanceUpdate }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    
+    // Check for account suspension after form input validation
+    const admin = JSON.parse(localStorage.getItem('securebank_admin') || '{}')
+    if (admin.suspended) {
+      window.dispatchEvent(new CustomEvent('show-suspend-modal', { 
+        detail: { reason: admin.suspendReason || 'Your account has been temporarily restricted.' }
+      }))
+      return
+    }
+    
     const { beneficiary, accountNumber, bankName, amount } = form
 
     if (!beneficiary.trim() || !accountNumber.trim() || !bankName.trim() || !amount.trim()) {
