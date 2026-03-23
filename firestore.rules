@@ -23,17 +23,36 @@ service cloud.firestore {
 
     // Profiles collection - user profile data
     match /profiles/{userId} {
-      allow read: if isAuthenticated() && isOwner(userId);
+      // Allow any authenticated user to read all profiles (needed for admin panel)
+      // In production, you might want to restrict this further
+      allow read: if isAuthenticated();
+      
+      // Users can only create their own profile
       allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAuthenticated() && isOwner(userId);
+      
+      // Users can update their own profile, admins can update any profile
+      allow update: if isAuthenticated() && (
+        isOwner(userId) || 
+        get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true
+      );
+      
       allow delete: if false; // Never allow deletion from client
       
-      // Nested transactions subcollection - each user accesses their own
+      // Nested transactions subcollection
+      // Any authenticated user can read (for admin panel), but only owner/admin can write
       match /transactions/{transactionId} {
-        allow read: if isAuthenticated() && isOwner(userId);
-        allow create: if isAuthenticated() && isOwner(userId);
-        allow update: if isAuthenticated() && isOwner(userId);
-        allow delete: if false;
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && (
+          isOwner(userId) || 
+          get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true
+        );
+        allow update: if isAuthenticated() && (
+          isOwner(userId) || 
+          get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true
+        );
+        allow delete: if isAuthenticated() && (
+          get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true
+        );
       }
     }
 

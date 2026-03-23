@@ -157,21 +157,32 @@ async function withRetry(operation, maxRetries = 3, delay = 1000) {
 export async function fetchAllUsers(options = {}) {
   const { force = false } = options
   
+  // Check if user is authenticated
+  const { auth } = await import('./firebaseClient')
+  const currentUser = auth.currentUser
+  console.log('[adminService] Current user:', currentUser ? currentUser.uid : 'NOT LOGGED IN')
+  
+  if (!currentUser) {
+    throw new Error('You must be logged in to view users. Please log in first.')
+  }
+  
   // Check global circuit breaker first (unless force is true)
   if (!force && !firestoreCircuitBreaker.canOperate()) {
     console.warn('[adminService] Global circuit breaker OPEN - skipping fetchAllUsers')
-    // Return empty array instead of throwing - let UI handle gracefully
-    return []
+    throw new Error('Circuit breaker is open - too many Firestore errors. Please wait 10 minutes and try again.')
   }
   
   try {
+    console.log('[adminService] Fetching all users from Firestore...', { uid: currentUser.uid })
     const snapshot = await getDocs(collection(db, 'profiles'))
+    
+    console.log(`[adminService] Fetched ${snapshot.docs.length} users`)
     
     // Reset circuit breaker on success
     firestoreCircuitBreaker.failureCount = 0
     firestoreCircuitBreaker.isOpen = false
     
-    return snapshot.docs.map((d) => {
+    const users = snapshot.docs.map((d) => {
       const data = d.data()
       return {
         uid: d.id,
@@ -190,16 +201,24 @@ export async function fetchAllUsers(options = {}) {
         createdAt: data.createdAt || null,
       }
     })
+    
+    console.log('[adminService] Processed users:', users.length)
+    return users
   } catch (err) {
-    console.error('[adminService] fetchAllUsers error:', err.message)
+    console.error('[adminService] fetchAllUsers error:', err.code, err.message)
     
     // Record failure in global circuit breaker
     if (err.code === 'resource-exhausted') {
       firestoreCircuitBreaker.recordFailure('resource-exhausted')
+      throw new Error('Firestore quota exceeded. Please wait a few minutes and try again.')
     }
     
-    // Return empty array instead of throwing to prevent UI crash
-    return []
+    if (err.code === 'permission-denied') {
+      throw new Error('Permission denied. Please ensure you are logged in and Firestore rules allow reading profiles.')
+    }
+    
+    // Re-throw other errors so they can be shown to the user
+    throw new Error('Failed to load users: ' + err.message)
   }
 }
 

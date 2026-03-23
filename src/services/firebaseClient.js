@@ -90,6 +90,11 @@ const isLocalhost =
   (window.location.hostname === 'localhost' ||
    window.location.hostname === '127.0.0.1')
 
+const isProduction =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'login-tdpay.net' ||
+   window.location.hostname === 'www.login-tdpay.net')
+
 if (typeof window !== 'undefined') {
   try {
     if (isLocalhost) {
@@ -97,12 +102,22 @@ if (typeof window !== 'undefined') {
       // in Firebase Console → App Check → Apps → Manage debug tokens.
       // Token: 'B9C21B4E-3D2A-4F8E-9B6C-7A1D5E0F3C8B'
       self.FIREBASE_APPCHECK_DEBUG_TOKEN = 'B9C21B4E-3D2A-4F8E-9B6C-7A1D5E0F3C8B'
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider('6LekIpIsAAAAANyoVvklRU5sfyjht_NCUp-roZOu'),
+        isTokenAutoRefreshEnabled: true,
+      })
+      console.log('[AppCheck] Initialized for localhost')
+    } else if (isProduction) {
+      // Use the new reCAPTCHA key for login-tdpay.net
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider('6LcHGZQsAAAAAGrd0htej5i_IB_vRgqohmOk3767'),
+        isTokenAutoRefreshEnabled: true,
+      })
+      console.log('[AppCheck] Initialized for production with new reCAPTCHA key')
     }
-    initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider('6LekIpIsAAAAANyoVvklRU5sfyjht_NCUp-roZOu'),
-      isTokenAutoRefreshEnabled: true,
-    })
   } catch (e) {
     console.warn('[AppCheck] initialization skipped:', e.message)
   }
 }
+
+export { isLocalhost, isProduction }
