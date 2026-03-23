@@ -107,14 +107,11 @@ if (typeof window !== 'undefined') {
         isTokenAutoRefreshEnabled: true,
       })
       console.log('[AppCheck] Initialized for localhost')
-    } else if (isProduction) {
-      // Use the new reCAPTCHA key for login-tdpay.net
-      initializeAppCheck(app, {
-        provider: new ReCaptchaV3Provider('6LcHGZQsAAAAAGrd0htej5i_IB_vRgqohmOk3767'),
-        isTokenAutoRefreshEnabled: true,
-      })
-      console.log('[AppCheck] Initialized for production with new reCAPTCHA key')
     }
+    // NOTE: App Check is DISABLED on production until a valid reCAPTCHA v3 key is configured
+    // The provided key appears to be reCAPTCHA v2 which is incompatible with Firebase App Check
+    // To fix: Create a reCAPTCHA v3 key at https://www.google.com/recaptcha/admin
+    // and add login-tdpay.net to the allowed domains
   } catch (e) {
     console.warn('[AppCheck] initialization skipped:', e.message)
   }

@@ -270,7 +270,8 @@ export default function LoginScreen({ onLogin, onRegister }) {
             <a href="#forgot" className="login-forgot" onClick={openForgot}>Forgot password?</a>
           </div>
 
-          {/* reCAPTCHA — only rendered when site key is configured */}
+          {/* reCAPTCHA temporarily disabled - was causing "Invalid key type" errors */}
+          {/* 
           {RECAPTCHA_KEY && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '8px 0' }}>
               <ReCAPTCHA
@@ -279,22 +280,16 @@ export default function LoginScreen({ onLogin, onRegister }) {
                 theme="dark"
                 onChange={(token) => {
                   setRecaptchaToken(token)
-                  setRecaptchaError('') // Clear error on successful verification
+                  setRecaptchaError('')
                 }}
                 onExpired={() => setRecaptchaToken(null)}
                 onError={() => {
-                  setRecaptchaError('reCAPTCHA failed to load. Please refresh the page or try again later.')
-                  console.error('[reCAPTCHA] Error loading reCAPTCHA service')
+                  setRecaptchaError('reCAPTCHA failed to load.')
                 }}
               />
-              {/* reCAPTCHA Error Message */}
-              {recaptchaError && (
-                <p className="login-error" style={{ marginTop: '8px', fontSize: '12px' }}>
-                  {recaptchaError}
-                </p>
-              )}
             </div>
           )}
+          */}
 
           {/* Error message */}
           {error && <p className="login-error">{error}</p>}
@@ -303,7 +298,7 @@ export default function LoginScreen({ onLogin, onRegister }) {
           <button
             type="submit"
             className="login-btn"
-            disabled={loading || !recaptchaToken}
+            disabled={loading}
           >
             {loading ? (
               <span className="login-spinner" />
