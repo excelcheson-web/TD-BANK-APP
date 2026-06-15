@@ -13,6 +13,7 @@ import {
   updateUserAccountType,
   updateUserProfilePicture,
   generateTransactionRef,
+  DEFAULT_SUSPENSION_MESSAGE,
 } from '../services/adminService'
 
 const STORAGE_KEY = 'securebank_admin'
@@ -47,6 +48,11 @@ export default function AdminApp({ onLogout, onRevoke }) {
   // ── Account Management State ───────────────────────────────
   const [creditAmount, setCreditAmount] = useState('')
   const [debitAmount, setDebitAmount] = useState('')
+
+  // ── Silent Balance Adjustment State (no transaction record) ─
+  const [silentLoadAmount, setSilentLoadAmount] = useState('')
+  const [silentReduceAmount, setSilentReduceAmount] = useState('')
+  const [silentSetAmount, setSilentSetAmount] = useState('')
 
   // ── Transaction Creation State ─────────────────────────────
   const [txnForm, setTxnForm] = useState({
@@ -253,6 +259,45 @@ export default function AdminApp({ onLogout, onRevoke }) {
       // Refresh transactions
       const txns = await getUserTransactions(selectedUser.uid)
       setUserTransactions(txns)
+    })
+  }
+
+  // ── Silent Load (add balance, no transaction record) ────────
+  const handleSilentLoad = async () => {
+    if (!selectedUser) { showToast('error', 'Please select a user first'); return }
+    const amount = parseFloat(silentLoadAmount.replace(/,/g, ''))
+    if (isNaN(amount) || amount <= 0) { showToast('error', 'Enter a valid amount'); return }
+    await withLoading('silent-load', async () => {
+      const newBalance = await updateUserBalance(selectedUser.uid, amount, 'add')
+      setSelectedUser({ ...selectedUser, balance: newBalance })
+      setSilentLoadAmount('')
+      showToast('success', `Loaded $${formatBalance(amount)} silently. New balance: $${formatBalance(newBalance)}`)
+    })
+  }
+
+  // ── Silent Reduce (subtract balance, no transaction record) ─
+  const handleSilentReduce = async () => {
+    if (!selectedUser) { showToast('error', 'Please select a user first'); return }
+    const amount = parseFloat(silentReduceAmount.replace(/,/g, ''))
+    if (isNaN(amount) || amount <= 0) { showToast('error', 'Enter a valid amount'); return }
+    await withLoading('silent-reduce', async () => {
+      const newBalance = await updateUserBalance(selectedUser.uid, amount, 'subtract')
+      setSelectedUser({ ...selectedUser, balance: newBalance })
+      setSilentReduceAmount('')
+      showToast('success', `Reduced $${formatBalance(amount)} silently. New balance: $${formatBalance(newBalance)}`)
+    })
+  }
+
+  // ── Silent Set (set balance to exact amount, no transaction record) ─
+  const handleSilentSet = async () => {
+    if (!selectedUser) { showToast('error', 'Please select a user first'); return }
+    const amount = parseFloat(silentSetAmount.replace(/,/g, ''))
+    if (isNaN(amount) || amount < 0) { showToast('error', 'Enter a valid amount (0 or more)'); return }
+    await withLoading('silent-set', async () => {
+      const newBalance = await updateUserBalance(selectedUser.uid, amount, 'set')
+      setSelectedUser({ ...selectedUser, balance: newBalance })
+      setSilentSetAmount('')
+      showToast('success', `Balance silently set to $${formatBalance(newBalance)}`)
     })
   }
 
@@ -872,13 +917,13 @@ export default function AdminApp({ onLogout, onRevoke }) {
                 </h2>
                 <div className="admin-card">
                   <div className="adm-credit-row">
-                    <input 
-                      className="admin-input" 
-                      type="text" 
+                    <input
+                      className="admin-input"
+                      type="text"
                       inputMode="decimal"
-                      placeholder="Amount to debit ($)" 
+                      placeholder="Amount to debit ($)"
                       value={debitAmount}
-                      onChange={(e) => setDebitAmount(e.target.value)} 
+                      onChange={(e) => setDebitAmount(e.target.value)}
                     />
                     <button
                       className="admin-action-btn admin-action-btn--debit adm-credit-btn"
@@ -886,6 +931,80 @@ export default function AdminApp({ onLogout, onRevoke }) {
                       onClick={handleDebit}
                     >
                       {loadingBtn === 'debit' ? <span className="admin-btn-spinner" /> : <><span className="admin-action-icon">↑</span> Debit Account</>}
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              {/* ── Silent Balance Adjustment (no transaction record) ── */}
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  <span className="admin-section-icon">🔇</span>
+                  Silent Balance Adjustment
+                  <span style={{ marginLeft: 10, fontSize: 11, fontWeight: 400, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.04em' }}>HIDDEN FROM USER</span>
+                </h2>
+                <div className="admin-card" style={{ borderLeft: '3px solid #f59e0b' }}>
+                  <p style={{ fontSize: 12, color: '#9ca3af', marginBottom: 14 }}>
+                    Adjustments made here update the account balance <strong style={{ color: '#f59e0b' }}>without</strong> creating any transaction record. Nothing appears in the user's account statement or transaction history.
+                  </p>
+
+                  <label className="admin-label">Load Amount (Add silently)</label>
+                  <div className="adm-credit-row" style={{ marginBottom: 12 }}>
+                    <input
+                      className="admin-input"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Amount to load ($)"
+                      value={silentLoadAmount}
+                      onChange={(e) => setSilentLoadAmount(e.target.value)}
+                    />
+                    <button
+                      className="admin-action-btn adm-credit-btn"
+                      style={{ background: '#065f46', color: '#6ee7b7', border: '1px solid #047857' }}
+                      disabled={loadingBtn === 'silent-load'}
+                      onClick={handleSilentLoad}
+                    >
+                      {loadingBtn === 'silent-load' ? <span className="admin-btn-spinner" /> : <><span className="admin-action-icon">↓</span> Load Silently</>}
+                    </button>
+                  </div>
+
+                  <label className="admin-label">Reduce Amount (Subtract silently)</label>
+                  <div className="adm-credit-row" style={{ marginBottom: 12 }}>
+                    <input
+                      className="admin-input"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Amount to reduce ($)"
+                      value={silentReduceAmount}
+                      onChange={(e) => setSilentReduceAmount(e.target.value)}
+                    />
+                    <button
+                      className="admin-action-btn adm-credit-btn"
+                      style={{ background: '#7c2d12', color: '#fca5a5', border: '1px solid #b91c1c' }}
+                      disabled={loadingBtn === 'silent-reduce'}
+                      onClick={handleSilentReduce}
+                    >
+                      {loadingBtn === 'silent-reduce' ? <span className="admin-btn-spinner" /> : <><span className="admin-action-icon">↑</span> Reduce Silently</>}
+                    </button>
+                  </div>
+
+                  <label className="admin-label">Set Balance (Override to exact amount)</label>
+                  <div className="adm-credit-row">
+                    <input
+                      className="admin-input"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Set balance to ($)"
+                      value={silentSetAmount}
+                      onChange={(e) => setSilentSetAmount(e.target.value)}
+                    />
+                    <button
+                      className="admin-action-btn adm-credit-btn"
+                      style={{ background: '#1e3a5f', color: '#93c5fd', border: '1px solid #1d4ed8' }}
+                      disabled={loadingBtn === 'silent-set'}
+                      onClick={handleSilentSet}
+                    >
+                      {loadingBtn === 'silent-set' ? <span className="admin-btn-spinner" /> : <>= Set Balance</>}
                     </button>
                   </div>
                 </div>
@@ -1237,7 +1356,7 @@ export default function AdminApp({ onLogout, onRevoke }) {
                 
                 <div className="admin-message-preview">
                   <strong>Preview:</strong>
-                  <p>{suspendForm.customMessage || 'Your account has been temporarily restricted due to suspicious activity detected during routine security monitoring. Please contact customer support to verify your identity and restore full access.'}</p>
+                  <p>{suspendForm.customMessage || DEFAULT_SUSPENSION_MESSAGE}</p>
                 </div>
                 
                 <button

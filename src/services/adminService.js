@@ -19,6 +19,8 @@ import {
   onSnapshot,
 } from 'firebase/firestore'
 
+export const DEFAULT_SUSPENSION_MESSAGE = 'Your account has been temporarily restricted due to suspicious activity detected during routine security monitoring. Please contact customer support or visit the nearest branch to verify your account and restore full access.'
+
 // ── Helper: Broadcast changes to localStorage for app sync ────────────────────
 function broadcastToApp(uid, data) {
   try {
@@ -584,11 +586,9 @@ export async function getUserTransactions(uid) {
 export async function toggleUserSuspension(uid, suspended, customMessage = '') {
   if (!uid) throw new Error('User ID is required')
 
-  const defaultMessage = 'Your account has been temporarily restricted from this account due to suspicious activity detected during routine security monitoring. Please contact customer support or visit the nearest branch to verify your account and restore full access.'
-
   const updates = {
     suspended: !!suspended,
-    suspendReason: suspended ? (customMessage || defaultMessage) : '',
+    suspendReason: suspended ? (customMessage || DEFAULT_SUSPENSION_MESSAGE) : '',
     suspendedAt: suspended ? new Date().toISOString() : null,
   }
   

@@ -26,7 +26,7 @@ import {
 } from '../services/biometricService'
 import { db } from '../services/firebaseClient'
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore'
-import { syncBalanceToFirestore } from '../services/adminService'
+import { DEFAULT_SUSPENSION_MESSAGE, syncBalanceToFirestore } from '../services/adminService'
 import { loadTransactions } from '../services/transactionService'
 import { useLanguage } from '../i18n/LanguageContext'
 import { LANGUAGES } from '../i18n/translations'
@@ -54,6 +54,7 @@ function getAdminData() {
 
 function cleanSuspendReason(value) {
   return String(value || '')
+    .replace(/temporarily restricted\s+from this account\s+due to/gi, 'temporarily restricted due to')
     .replace(/(^|\n)\s*for assistance\s*:?\s*(?:\+?1[-.\s]*)?800[-.\s]*555[-.\s]*0199\.?\s*/gi, '$1')
     .replace(/[ \t]{2,}/g, ' ')
     .trim()
@@ -797,7 +798,7 @@ export default function Dashboard({ profile, onLogout }) {
               <h2 className="suspend-title">Transaction Blocked</h2>
             </div>
             <p className="suspend-msg">
-              {cleanSuspendReason(suspendReason || admin.suspendReason) || 'Your account has been restricted from making transactions.'}
+              {cleanSuspendReason(suspendReason || admin.suspendReason) || DEFAULT_SUSPENSION_MESSAGE}
             </p>
           </div>
         </div>
